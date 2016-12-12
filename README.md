@@ -1,26 +1,12 @@
-
 # xenon-utils
-This project holds libraries/utilities which will make it easy for users to solve very specific problems and complement Xenon's capabilities. It is being developed as a Xenon Peer Project and will be primarily used to provide inter-operabilities with various non-xenon solutions/frameworks. At the start the project would include libraries like slf4j, distributed-tracing, etc, which helps interact with other frameworks.
-
-## Overview
-
-## Try it out
-
-### Prerequisites
-
-* Prereq 1
-* Prereq 2
-* Prereq 3
-
-### Build & Run
-
-1. Step 1
-2. Step 2
-3. Step 3
+This repo holds libraries/utilities which will make it easy for users to solve very specific problems and complement Xenon's capabilities. It is being developed as a Xenon Peer Project and will be primarily used to provide inter-operabilities with various non-xenon solutions/frameworks. At the start the project would include libraries like slf4j, distributed-tracing, etc, which helps interact with other frameworks.
 
 ## Documentation
+* [Distributed tracing](distributed-tracing/README.md)
+
 
 ## Releases & Major Branches
+Every project follows different release cycle. Consult every project's README file for details
 
 ## Contributing
 
@@ -30,3 +16,4 @@ questions about the CLA process, please refer to our [FAQ](https://cla.vmware.co
 refer to [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
+Projects under xenon-utils are distributed under the [ASL 2.0](LICENSE.txt) license.

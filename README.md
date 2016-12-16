@@ -2,8 +2,9 @@
 This repo holds libraries/utilities which will make it easy for users to solve very specific problems and complement Xenon's capabilities. It is being developed as a Xenon Peer Project and will be primarily used to provide inter-operabilities with various non-xenon solutions/frameworks. At the start the project would include libraries like slf4j, distributed-tracing, etc, which helps interact with other frameworks.
 
 ## Projects
-* [Distributed tracing](distributed-tracing/README.md)
-* [Logging](logging/README.md)
+* [Distributed tracing](distributed-tracing/README.md) Distributed tracing with Zipkin
+* [Logging](logging/README.md) Integrate Java logging frameworks with Xenon
+* [xenonc](xenonc/README.md) A CLI for Xenon
 
 
 ## Releases and Major Branches

@@ -16,7 +16,6 @@ package com.vmware.xenon.distributedtracing.zipkin;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -31,7 +30,7 @@ import com.twitter.zipkin.gen.Span;
 public class ZipkinLocalSpanCache {
     private static final long MAX_SIZE = 10000;
     private static final long MAX_TIME_IN_MINUTES = 1;
-    private static final Logger LOG = Logger.getLogger(ZipkinLocalSpanCache.class.getName());
+
     private final LoadingCache<CachedSpan, Optional<String>> cache;
 
     public ZipkinLocalSpanCache() {

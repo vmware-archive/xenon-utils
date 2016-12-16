@@ -15,11 +15,10 @@ package com.vmware.xenon.distributedtracing;
 
 import java.util.UUID;
 
+import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import junit.framework.TestCase;
 
 public class DTracerTest extends TestCase {
 

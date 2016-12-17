@@ -113,7 +113,7 @@
           <skip>${skipAnalysis}</skip>
           <effort>Max</effort>
           <xmlOutput>true</xmlOutput>
-          <excludeFilterFile>../contrib/findbugs-exclude.xml</excludeFilterFile>
+          <excludeFilterFile>${project.parent.basedir}/../contrib/findbugs-exclude.xml</excludeFilterFile>
         </configuration>
         <executions>
           <execution>

@@ -13,5 +13,6 @@
   <modules>
     <module>distributed-tracing</module>
     <module>logging</module>
+    <module>swagger-adapter</module>
   </modules>
 </project>

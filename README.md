@@ -4,8 +4,8 @@ This repo holds libraries/utilities which will make it easy for users to solve v
 ## Projects
 * [Distributed tracing](distributed-tracing/README.md) Distributed tracing with Zipkin
 * [Logging](logging/README.md) Integrate Java logging frameworks with Xenon
-* [xenonc](xenonc/README.md) A CLI for Xenon
-
+* [xenonc](xenonc/README.md) A CLI for Xenon written in Go
+* [Swagger](swagger-adapter/README.md) Automatically generate Swagger description of your services
 
 ## Releases and Major Branches
 Every project follows different release cycle. Consult every project's README file for details.

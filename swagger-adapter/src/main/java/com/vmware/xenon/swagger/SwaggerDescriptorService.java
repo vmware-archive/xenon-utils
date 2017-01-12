@@ -13,7 +13,10 @@
 
 package com.vmware.xenon.swagger;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 import java.util.EnumSet;
+import java.util.zip.GZIPOutputStream;
 
 import io.swagger.models.Info;
 
@@ -22,6 +25,7 @@ import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.StatelessService;
+import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
 /**
@@ -30,6 +34,8 @@ import com.vmware.xenon.services.common.ServiceUriPaths;
  */
 public class SwaggerDescriptorService extends StatelessService {
     public static final String SELF_LINK = ServiceUriPaths.SWAGGER;
+
+    private static final String ACCEPT_ENCODING_HEADER = "accept-encoding";
 
     private Info info;
     private String[] excludedPrefixes;
@@ -77,6 +83,11 @@ public class SwaggerDescriptorService extends StatelessService {
 
     @Override
     public void handleGet(Operation get) {
+        String acceptEncoding = get.getRequestHeader(ACCEPT_ENCODING_HEADER);
+        if (acceptEncoding != null && acceptEncoding.contains(Operation.CONTENT_ENCODING_GZIP)) {
+            addCompressHandler(get);
+        }
+
         Operation op = Operation.createGet(this, "/");
         op.setCompletion((o, e) -> {
             SwaggerAssembler
@@ -95,5 +106,38 @@ public class SwaggerDescriptorService extends StatelessService {
                 op,
                 // exclude factory items
                 EnumSet.of(ServiceOption.FACTORY_ITEM));
+    }
+
+    private void addCompressHandler(Operation get) {
+        get.nestCompletion((o, e) -> {
+            String content = o.getBody(String.class);
+            ByteBuffer compressed;
+            try {
+                compressed = compressGZip(content);
+            } catch (Exception ex) {
+                get.fail(ex);
+                return;
+            }
+
+            get.addResponseHeader(Operation.CONTENT_ENCODING_HEADER,
+                    Operation.CONTENT_ENCODING_GZIP);
+            get.setBodyNoCloning(compressed.array());
+            get.setContentLength(compressed.limit());
+
+            get.complete();
+        });
+    }
+
+    /**
+     * Compresses text to gzip byte buffer.
+     */
+    private ByteBuffer compressGZip(String text) throws Exception {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try (GZIPOutputStream zos = new GZIPOutputStream(out)) {
+            byte[] bytes = text.getBytes(Utils.CHARSET);
+            zos.write(bytes, 0, bytes.length);
+        }
+
+        return ByteBuffer.wrap(out.toByteArray());
     }
 }

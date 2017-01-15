@@ -2,10 +2,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
   <groupId>com.vmware.xenon</groupId>
   <artifactId>logging</artifactId>
   <version>0.0.2-SNAPSHOT</version>
   <packaging>pom</packaging>
+  <name>logging</name>
+  <url>https://github.com/vmware/xenon</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -15,6 +18,78 @@
   <modules>
     <module>slf4j-xenon</module>
   </modules>
+
+  <licenses>
+    <license>
+      <name>License</name>
+      <url>https://github.com/vmware/xenon-utils/blob/master/LICENSE</url>
+    </license>
+    <license>
+      <name>Notice</name>
+      <url>https://github.com/vmware/xenon-utils/blob/master/NOTICE</url>
+    </license>
+  </licenses>
+
+  <description>
+    Sl4j bridge to Xenon logging framework (based on JUL).
+  </description>
+
+  <scm>
+    <connection>scm:git:git@github.com:vmware/xenon-utils.git</connection>
+    <developerConnection>scm:git:git@github.com:vmware/xenon-utils.git</developerConnection>
+    <url>git@github.com:vmware/xenon-utils.git</url>
+  </scm>
+
+  <developers>
+    <developer>
+      <name>George Chrysanthakopoulos</name>
+      <email>georgec@vmware.com</email>
+      <organization>VMware</organization>
+      <organizationUrl>https://www.vmware.com/</organizationUrl>
+    </developer>
+    <developer>
+      <name>Tadaya Tsuyukubo</name>
+      <email>ttsuyukubo@vmware.com</email>
+      <organization>VMware</organization>
+      <organizationUrl>https://www.vmware.com/</organizationUrl>
+    </developer>
+    <developer>
+      <name>Sufian Dar</name>
+      <email>dars@vmware.com</email>
+      <organization>VMware</organization>
+      <organizationUrl>https://www.vmware.com/</organizationUrl>
+    </developer>
+    <developer>
+      <name>Asaf Kariv</name>
+      <email>kariva@vmware.com</email>
+      <organization>VMware</organization>
+      <organizationUrl>https://www.vmware.com/</organizationUrl>
+    </developer>
+    <developer>
+      <name>Gurudutt Belur</name>
+      <email>gbelur@vmware.com</email>
+      <organization>VMware</organization>
+      <organizationUrl>https://www.vmware.com/</organizationUrl>
+    </developer>
+    <developer>
+      <name>Vamsi Krishna Brahmajosyula</name>
+      <email>vbrahmajosyula@vmware.com</email>
+      <organization>VMware</organization>
+      <organizationUrl>https://www.vmware.com/</organizationUrl>
+    </developer>
+    <developer>
+      <name>Kenneth Jung</name>
+      <email>jungk@vmware.com</email>
+      <organization>VMware</organization>
+      <organizationUrl>https://www.vmware.com/</organizationUrl>
+    </developer>
+    <developer>
+      <name>Julian Vassev</name>
+      <email>jvassev@vmware.com</email>
+      <organization>VMware</organization>
+      <organizationUrl>https://www.vmware.com/</organizationUrl>
+    </developer>
+  </developers>
 
   <build>
     <plugins>

@@ -31,6 +31,7 @@ elif ! echo ${NEXT_DEV_VERSION} | grep -- '-SNAPSHOT$' > /dev/null; then
   exit 1
 fi
 
+XENON_LOCAL_REPO="."
 
 # check clean or not
 if [ -z "$(git status --porcelain)" ]; then

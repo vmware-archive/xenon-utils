@@ -6,6 +6,8 @@
   <groupId>com.vmware.xenon</groupId>
   <artifactId>xenon-swagger-adapter</artifactId>
   <version>0.0.1-SNAPSHOT</version>
+  <name>xenon-swagger-adapter</name>
+  <url>https://github.com/vmware/xenon</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -14,6 +16,78 @@
     <junit.version>4.12</junit.version>
   </properties>
 
+  <licenses>
+    <license>
+      <name>License</name>
+      <url>https://github.com/vmware/xenon-utils/blob/master/LICENSE</url>
+    </license>
+    <license>
+      <name>Notice</name>
+      <url>https://github.com/vmware/xenon-utils/blob/master/NOTICE</url>
+    </license>
+  </licenses>
+
+  <description>
+    Dynamic Swagger descriptor generation based on services running in
+    a Xenon host.
+  </description>
+
+  <scm>
+    <connection>scm:git:git@github.com:vmware/xenon-utils.git</connection>
+    <developerConnection>scm:git:git@github.com:vmware/xenon-utils.git</developerConnection>
+    <url>git@github.com:vmware/xenon-utils.git</url>
+  </scm>
+
+  <developers>
+    <developer>
+      <name>George Chrysanthakopoulos</name>
+      <email>georgec@vmware.com</email>
+      <organization>VMware</organization>
+      <organizationUrl>https://www.vmware.com/</organizationUrl>
+    </developer>
+    <developer>
+      <name>Tadaya Tsuyukubo</name>
+      <email>ttsuyukubo@vmware.com</email>
+      <organization>VMware</organization>
+      <organizationUrl>https://www.vmware.com/</organizationUrl>
+    </developer>
+    <developer>
+      <name>Sufian Dar</name>
+      <email>dars@vmware.com</email>
+      <organization>VMware</organization>
+      <organizationUrl>https://www.vmware.com/</organizationUrl>
+    </developer>
+    <developer>
+      <name>Asaf Kariv</name>
+      <email>kariva@vmware.com</email>
+      <organization>VMware</organization>
+      <organizationUrl>https://www.vmware.com/</organizationUrl>
+    </developer>
+    <developer>
+      <name>Gurudutt Belur</name>
+      <email>gbelur@vmware.com</email>
+      <organization>VMware</organization>
+      <organizationUrl>https://www.vmware.com/</organizationUrl>
+    </developer>
+    <developer>
+      <name>Vamsi Krishna Brahmajosyula</name>
+      <email>vbrahmajosyula@vmware.com</email>
+      <organization>VMware</organization>
+      <organizationUrl>https://www.vmware.com/</organizationUrl>
+    </developer>
+    <developer>
+      <name>Kenneth Jung</name>
+      <email>jungk@vmware.com</email>
+      <organization>VMware</organization>
+      <organizationUrl>https://www.vmware.com/</organizationUrl>
+    </developer>
+    <developer>
+      <name>Julian Vassev</name>
+      <email>jvassev@vmware.com</email>
+      <organization>VMware</organization>
+      <organizationUrl>https://www.vmware.com/</organizationUrl>
+    </developer>
+  </developers>
 
   <dependencies>
     <dependency>

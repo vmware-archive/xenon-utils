@@ -86,6 +86,12 @@
       <organization>VMware</organization>
       <organizationUrl>https://www.vmware.com/</organizationUrl>
     </developer>
+    <developer>
+      <name>Gautam Soni</name>
+      <email>sonig@vmware.com</email>
+      <organization>VMware</organization>
+      <organizationUrl>https://www.vmware.com/</organizationUrl>
+    </developer>
   </developers>
 
   <dependencies>

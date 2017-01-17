@@ -56,7 +56,7 @@ RELEASE_VERSION=${CURRENT_VERSION%-SNAPSHOT}
 
 echo Preparing release of ${RELEASE_VERSION} from ${CURRENT_VERSION}
 echo You are going to release ${RELEASE_VERSION} from ${COMMIT}
-git checkout -b prepare-release-${RELEASE_VERSION}
+git checkout -b prepare-release-${UTILS_PROJECT}-${RELEASE_VERSION}
 
 # create release version
 sed ${SED_PARAMS} "s/${CURRENT_VERSION}/${RELEASE_VERSION}/" ${CHANGE_LOG_FILE}

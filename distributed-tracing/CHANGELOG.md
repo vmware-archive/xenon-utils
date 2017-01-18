@@ -1,5 +1,5 @@
 # CHANGELOG
 
-## 0.0.1-SNAPSHOT
+## 0.0.1
 
 * Initial release

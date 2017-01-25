@@ -13,9 +13,11 @@
 
 package com.vmware.xenon.swagger;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -24,16 +26,21 @@ import static com.vmware.xenon.common.Operation.CONTENT_ENCODING_GZIP;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Map;
 
 import io.swagger.models.Info;
 import io.swagger.models.Model;
 import io.swagger.models.Path;
 import io.swagger.models.Swagger;
+import io.swagger.models.parameters.BodyParameter;
+import io.swagger.models.parameters.Parameter;
+import io.swagger.models.parameters.QueryParameter;
 import io.swagger.models.properties.Property;
 import io.swagger.util.Json;
 import io.swagger.util.Yaml;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -244,6 +251,13 @@ public class TestSwaggerDescriptorService {
         assertEquals(INFO_TERMS_OF_SERVICE, swagger.getInfo().getTermsOfService());
 
 
+        // Custom Tag name and description
+        swagger.getTags().stream().forEach((t) -> {
+            if (t.getName().equals("Custom Tag Name")) {
+                assertEquals("Custom Service Description", t.getDescription());
+            }
+        });
+
         // excluded prefixes
         assertNull(swagger.getPath(ServiceUriPaths.CORE_AUTHZ_USERS));
         assertNull(swagger.getPath(ServiceUriPaths.CORE_AUTHZ_ROLES));
@@ -279,12 +293,40 @@ public class TestSwaggerDescriptorService {
 
         p = swagger.getPath("/tokens");
         assertNotNull(p);
-        assertNotNull(p.getGet());
-        assertNotNull(p.getGet().getResponses());
+        io.swagger.models.Operation opGet = p.getGet();
+        assertNotNull(opGet);
+        assertEquals("Custom Tag Name", opGet.getTags().get(0));
+        assertEquals("Short version / Long version", opGet.getDescription());
+        List<Parameter> parameters = opGet.getParameters();
+        assertNotNull(parameters);
+        assertEquals(2, parameters.size());
+        parameters.stream().forEach((param) -> {
+            assertEquals("type", param.getName());
+            assertThat((String) ((QueryParameter) param).getDefault(), CoreMatchers.either
+                    (containsString("short")).or(containsString("long")));
+        });
+        assertNotNull(opGet.getResponses());
+
         assertNotNull(p.getPost());
         assertNotNull(p.getPost().getParameters());
-        assertNull(p.getPatch());
+        assertNotNull(p.getPatch());
         assertNull(p.getDelete());
+
+        io.swagger.models.Operation opPut = p.getPut();
+        assertNotNull(opPut);
+        assertEquals("Custom Tag Name", opPut.getTags().get(0));
+        assertEquals("Replace user-token mapping", opPut.getDescription());
+        parameters = opPut.getParameters();
+        assertNotNull(parameters);
+        assertEquals(2, parameters.size());
+        parameters.stream().forEach((param) -> {
+            if (param.getName() != null) {
+                assertTrue(param instanceof QueryParameter);
+            } else {
+                assertTrue(param instanceof BodyParameter);
+            }
+        });
+        assertNotNull(opPut.getResponses());
 
         Model model = swagger.getDefinitions().get(Utils.buildKind(UserToken.class));
         Map<String, Property> properties = model.getProperties();

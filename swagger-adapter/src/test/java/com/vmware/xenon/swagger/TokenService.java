@@ -13,16 +13,18 @@
 
 package com.vmware.xenon.swagger;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.logging.Level;
 
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationProcessingChain;
+import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.RequestRouter.Route;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocument.UsageOption;
-import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.ServiceDocumentDescription.PropertyUsageOption;
 import com.vmware.xenon.common.StatelessService;
 
@@ -40,6 +42,37 @@ public class TokenService extends StatelessService {
         public String token;
         @UsageOption(option = PropertyUsageOption.SERVICE_USE)
         public String internalId;
+    }
+
+    @Override
+    public OperationProcessingChain getOperationProcessingChain() {
+        RequestRouter requestRouter = new RequestRouter();
+
+        //Post with activate action activates the pipeline
+        requestRouter.register(
+                Action.GET,
+                new RequestRouter.RequestUriMatcher("type=short"),
+                this::handleGetForShort, "Short version");
+        //Post with execute action executes the pipeline
+        requestRouter.register(
+                Action.GET,
+                new RequestRouter.RequestUriMatcher("type=long"),
+                this::handleGet, "Long version");
+
+        requestRouter.register(Action.PATCH,
+                new RequestRouter.RequestBodyMatcher<>(UserToken.class, "token",
+                        "34bf4c10-e122-11e6-bf01-fe55135034f3"),
+                this::handlePatch, "Patch Token 1");
+
+        requestRouter.register(Action.PATCH,
+                new RequestRouter.RequestBodyMatcher<>(UserToken.class, "token",
+                        "34bf4c10-e122-11e6-bf01-fe55135034f1"),
+                this::handlePatch, "Patch Token 2");
+
+        OperationProcessingChain opProcessingChain = new OperationProcessingChain(this);
+        opProcessingChain.add(requestRouter);
+        setOperationProcessingChain(opProcessingChain);
+        return opProcessingChain;
     }
 
 
@@ -61,25 +94,44 @@ public class TokenService extends StatelessService {
     @Override
     public ServiceDocument getDocumentTemplate() {
         ServiceDocument d = super.getDocumentTemplate();
-        d.documentDescription = new ServiceDocumentDescription();
 
-        d.documentDescription.serviceRequestRoutes = new HashMap<>();
+        if (d.documentDescription.serviceRequestRoutes == null) {
+            d.documentDescription.serviceRequestRoutes = new HashMap<>();
+        }
+        d.documentDescription.name = "Custom Tag Name";
+        d.documentDescription.description = "Custom Service Description";
 
         Route route = new Route();
-        route.action = Action.GET;
-        route.description = "Retrieves a random token";
-        route.responseType = Token.class;
-
+        route.action = Action.POST;
+        route.description = "Creates user-token mapping";
+        route.requestType = UserToken.class;
         d.documentDescription.serviceRequestRoutes
                 .put(route.action, Collections.singletonList(route));
 
         route = new Route();
-        route.action = Action.POST;
-        route.description = "Creates user-token mapping";
+        route.action = Action.PUT;
+        route.description = "Replace user-token mapping";
         route.requestType = UserToken.class;
+
+        route.parameters = new ArrayList<>();
+        RequestRouter.Parameter parameter1 = new RequestRouter.Parameter("append", "user Name",
+                "string", false, "true", RequestRouter.ParamDef.QUERY);
+        RequestRouter.Parameter parameter2 = new RequestRouter.Parameter("token", "Token value",
+                "string", false, "34bf4c10-e122-11e6-bf01-fe55135034f3", RequestRouter.ParamDef.BODY);
+        RequestRouter.Parameter parameter3 = new RequestRouter.Parameter("name", "Update user",
+                "string", true, "user1", RequestRouter.ParamDef.BODY);
+        route.parameters.add(parameter1);
+        route.parameters.add(parameter2);
+        route.parameters.add(parameter3);
 
         d.documentDescription.serviceRequestRoutes
                 .put(route.action, Collections.singletonList(route));
         return d;
+    }
+
+    private void handleGetForShort(Operation get) {
+        Token response = new Token();
+        response.token = String.valueOf(UUID.randomUUID().getMostSignificantBits());
+        get.setBody(response).complete();
     }
 }

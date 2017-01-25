@@ -244,6 +244,13 @@ public class TestSwaggerDescriptorService {
         assertEquals(INFO_TERMS_OF_SERVICE, swagger.getInfo().getTermsOfService());
 
 
+        //Custom Tag name and description
+        swagger.getTags().stream().forEach((t) -> {
+            if (t.getName().equals("Custom Tag Name")) {
+                assertEquals("Custom Service Description", t.getDescription());
+            }
+        });
+
         // excluded prefixes
         assertNull(swagger.getPath(ServiceUriPaths.CORE_AUTHZ_USERS));
         assertNull(swagger.getPath(ServiceUriPaths.CORE_AUTHZ_ROLES));
@@ -280,11 +287,14 @@ public class TestSwaggerDescriptorService {
         p = swagger.getPath("/tokens");
         assertNotNull(p);
         assertNotNull(p.getGet());
+        assertEquals("Custom Tag Name", p.getGet().getTags().get(0));
+        assertNotNull(p.getGet().getParameters());
         assertNotNull(p.getGet().getResponses());
         assertNotNull(p.getPost());
         assertNotNull(p.getPost().getParameters());
-        assertNull(p.getPatch());
+        assertNotNull(p.getPatch());
         assertNull(p.getDelete());
+        assertNotNull(p.getPut());
 
         Model model = swagger.getDefinitions().get(Utils.buildKind(UserToken.class));
         Map<String, Property> properties = model.getProperties();

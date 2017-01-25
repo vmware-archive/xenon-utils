@@ -13,6 +13,9 @@
 
 package com.vmware.xenon.swagger;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,6 +29,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
+import io.swagger.models.ArrayModel;
 import io.swagger.models.Info;
 import io.swagger.models.Model;
 import io.swagger.models.ModelImpl;
@@ -47,6 +51,7 @@ import io.swagger.util.Yaml;
 
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.RequestRouter.Route;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceConfigUpdateRequest;
@@ -185,7 +190,7 @@ class SwaggerAssembler {
 
                 String uri = UriUtils.getParentPath(e.getValue().getUri().getPath());
 
-                // use service base path as tag
+                // use service base path as tag if there is no custom value present
                 this.currentTag = new Tag();
                 this.currentTag.setName(uri);
 
@@ -219,16 +224,36 @@ class SwaggerAssembler {
 
         if (q.documents != null) {
             Object firstDoc = q.documents.values().iterator().next();
-            addFactory(uri, Utils.fromJson(firstDoc, ServiceDocument.class));
+            ServiceDocument serviceDocument = Utils.fromJson(firstDoc, ServiceDocument.class);
+            // Override the custom tag and description if present as part of documentDescription
+            updateCurrentTag(this.currentTag, serviceDocument.documentDescription);
+            addFactory(uri, serviceDocument);
 
             this.swagger.addTag(this.currentTag);
         } else if (q.documentDescription != null
                 && q.documentDescription.serviceRequestRoutes != null
                 && !q.documentDescription.serviceRequestRoutes.isEmpty()) {
+            updateCurrentTag(this.currentTag, q.documentDescription);
             this.swagger
                     .path(uri, pathByRoutes(q.documentDescription.serviceRequestRoutes.values()));
 
             this.swagger.addTag(this.currentTag);
+        }
+    }
+
+    /**
+     * Updates current tag name and description if a non-null value is present in the
+     * ServiceDocumentDescription.
+     */
+    private void updateCurrentTag(Tag currentTag, ServiceDocumentDescription documentDescription) {
+        if (documentDescription != null) {
+            if (isNotBlank(documentDescription.name)) {
+                currentTag.setName(documentDescription.name);
+            }
+
+            if (isNotBlank(documentDescription.description)) {
+                currentTag.setDescription(documentDescription.description);
+            }
         }
     }
 
@@ -449,6 +474,48 @@ class SwaggerAssembler {
         return res;
     }
 
+    /**
+     * Build BodyParameter for the Route parameter of type body.
+     */
+    private BodyParameter paramBody(List<RequestRouter.Parameter> routeParams, Route route) {
+        BodyParameter bodyParam = new BodyParameter();
+        bodyParam.setRequired(false);
+
+        ArrayModel arrayModel = new ArrayModel();
+        if (routeParams != null) {
+            Map<String, Property> properties = new HashMap<>(routeParams.size());
+            routeParams.stream().forEach((p) -> {
+                StringProperty stringProperty = new StringProperty();
+                stringProperty.setName(p.name);
+                stringProperty.setDescription(isBlank(p.description) ? route.description :
+                        p.description);
+                stringProperty.setDefault(p.value);
+                stringProperty.setRequired(p.required);
+                stringProperty.setType(StringProperty.TYPE);
+
+                properties.put(p.name, stringProperty);
+            });
+            arrayModel.setProperties(properties);
+        }
+        bodyParam.setSchema(arrayModel);
+        return bodyParam;
+    }
+
+    /**
+     * Build QueryParameter for the Route parameter of type query.
+     */
+    private QueryParameter paramQuery(RequestRouter.Parameter routeParam, Route route) {
+        QueryParameter queryParam = new QueryParameter();
+        queryParam.setName(routeParam.name);
+        queryParam.setDescription(isBlank(routeParam.description) ? route.description :
+                routeParam.description);
+        queryParam.setRequired(routeParam.required);
+        // Setting the type to be lowercase so that we match the swagger type.
+        queryParam.setType(routeParam.type != null ? routeParam.type.toLowerCase() : "");
+        queryParam.setDefaultValue(routeParam.value);
+        return queryParam;
+    }
+
     private ModelImpl modelForPodo(Class<?> type) {
         PropertyDescription pd = Builder.create()
                 .buildPodoPropertyDescription(type);
@@ -557,6 +624,7 @@ class SwaggerAssembler {
             path.setPost(pathByRoutes.getPost());
             path.setPut(pathByRoutes.getPut());
             path.setPatch(pathByRoutes.getPatch());
+            path.setDelete(pathByRoutes.getDelete());
         } else {
             io.swagger.models.Operation op = new io.swagger.models.Operation();
             op.addTag(this.currentTag.getName());
@@ -571,6 +639,7 @@ class SwaggerAssembler {
             path.setPost(op);
             path.setPut(op);
             path.setPatch(op);
+            path.setDelete(op);
         }
 
         return path;
@@ -589,7 +658,25 @@ class SwaggerAssembler {
                 io.swagger.models.Operation op = new io.swagger.models.Operation();
                 op.addTag(this.currentTag.getName());
                 op.setDescription(route.description);
-                if (route.requestType != null) {
+
+                if (route.parameters != null) {
+                    // From the parameters list split body / query parameters
+                    List<RequestRouter.Parameter> bodyParams = new ArrayList<>();
+                    List<Parameter> swaggerParams = new ArrayList<>();
+                    route.parameters.stream().forEach((p) -> {
+                        if (p.paramDef == RequestRouter.ParamDef.BODY) {
+                            bodyParams.add(p);
+                        } else {
+                            swaggerParams.add(paramQuery(p, route));
+                        }
+                    });
+                    // This is to handle the use case of having multiple values in the body for a
+                    // given operation.
+                    if (!bodyParams.isEmpty()) {
+                        swaggerParams.add(paramBody(bodyParams, route));
+                    }
+                    op.setParameters(swaggerParams);
+                } else if (route.requestType != null) {
                     op.setParameters(Collections.singletonList(paramBody(route.requestType)));
                 }
 
@@ -601,22 +688,22 @@ class SwaggerAssembler {
 
                 switch (route.action) {
                 case POST:
-                    path.post(op);
+                    path.post(getSwaggerOperation(op, path.getPost()));
                     break;
                 case PUT:
-                    path.put(op);
+                    path.put(getSwaggerOperation(op, path.getPut()));
                     break;
                 case PATCH:
-                    path.patch(op);
+                    path.patch(getSwaggerOperation(op, path.getPatch()));
                     break;
                 case GET:
-                    path.get(op);
+                    path.get(getSwaggerOperation(op, path.getGet()));
                     break;
                 case DELETE:
-                    path.delete(op);
+                    path.delete(getSwaggerOperation(op, path.getDelete()));
                     break;
                 case OPTIONS:
-                    path.options(op);
+                    path.options(getSwaggerOperation(op, path.getOptions()));
                     break;
                 default:
                     throw new IllegalStateException("Unknown route action encounter: " + route.action);
@@ -624,6 +711,23 @@ class SwaggerAssembler {
             }
         }
         return path;
+    }
+
+    private io.swagger.models.Operation getSwaggerOperation(io.swagger.models.Operation sourceOp,
+            io.swagger.models.Operation destOp) {
+        if (destOp != null) {
+            destOp.getParameters().addAll(sourceOp.getParameters());
+            // Append the description as well
+            if (isNotBlank(destOp.getDescription()) && isNotBlank(sourceOp.getDescription())) {
+                destOp.setDescription(String.format("%s / %s", destOp.getDescription(), sourceOp
+                        .getDescription()));
+            } else {
+                destOp.setDescription(sourceOp.getDescription());
+            }
+        } else {
+            destOp = sourceOp;
+        }
+        return destOp;
     }
 
     private Path path2Factory(ServiceDocument doc) {

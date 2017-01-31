@@ -13,10 +13,8 @@
 
 package com.vmware.xenon.swagger;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
-import java.util.zip.GZIPOutputStream;
 
 import io.swagger.models.Info;
 
@@ -34,8 +32,6 @@ import com.vmware.xenon.services.common.ServiceUriPaths;
  */
 public class SwaggerDescriptorService extends StatelessService {
     public static final String SELF_LINK = ServiceUriPaths.SWAGGER;
-
-    private static final String ACCEPT_ENCODING_HEADER = "accept-encoding";
 
     private Info info;
     private String[] excludedPrefixes;
@@ -83,7 +79,7 @@ public class SwaggerDescriptorService extends StatelessService {
 
     @Override
     public void handleGet(Operation get) {
-        String acceptEncoding = get.getRequestHeader(ACCEPT_ENCODING_HEADER);
+        String acceptEncoding = get.getRequestHeader(Operation.ACCEPT_ENCODING_HEADER);
         if (acceptEncoding != null && acceptEncoding.contains(Operation.CONTENT_ENCODING_GZIP)) {
             addCompressHandler(get);
         }
@@ -113,7 +109,7 @@ public class SwaggerDescriptorService extends StatelessService {
             String content = o.getBody(String.class);
             ByteBuffer compressed;
             try {
-                compressed = compressGZip(content);
+                compressed = Utils.compressGZip(content);
             } catch (Exception ex) {
                 get.fail(ex);
                 return;
@@ -128,16 +124,4 @@ public class SwaggerDescriptorService extends StatelessService {
         });
     }
 
-    /**
-     * Compresses text to gzip byte buffer.
-     */
-    private ByteBuffer compressGZip(String text) throws Exception {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try (GZIPOutputStream zos = new GZIPOutputStream(out)) {
-            byte[] bytes = text.getBytes(Utils.CHARSET);
-            zos.write(bytes, 0, bytes.length);
-        }
-
-        return ByteBuffer.wrap(out.toByteArray());
-    }
 }

@@ -672,9 +672,12 @@ class SwaggerAssembler {
                     });
                     // This is to handle the use case of having multiple values in the body for a
                     // given operation.
+                    // TODO fix the below method and re-enable
+                    /*
                     if (!bodyParams.isEmpty()) {
                         swaggerParams.add(paramBody(bodyParams, route));
                     }
+                    */
                     op.setParameters(swaggerParams);
                 } else if (route.requestType != null) {
                     op.setParameters(Collections.singletonList(paramBody(route.requestType)));

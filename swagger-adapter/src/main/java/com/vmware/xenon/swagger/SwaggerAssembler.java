@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
-import io.swagger.models.ArrayModel;
 import io.swagger.models.Info;
 import io.swagger.models.Model;
 import io.swagger.models.ModelImpl;
@@ -481,7 +480,7 @@ class SwaggerAssembler {
         BodyParameter bodyParam = new BodyParameter();
         bodyParam.setRequired(false);
 
-        ArrayModel arrayModel = new ArrayModel();
+        Model model = new ModelImpl();
         if (routeParams != null) {
             Map<String, Property> properties = new HashMap<>(routeParams.size());
             routeParams.stream().forEach((p) -> {
@@ -495,9 +494,9 @@ class SwaggerAssembler {
 
                 properties.put(p.name, stringProperty);
             });
-            arrayModel.setProperties(properties);
+            model.setProperties(properties);
         }
-        bodyParam.setSchema(arrayModel);
+        bodyParam.setSchema(model);
         return bodyParam;
     }
 

@@ -71,6 +71,7 @@ public class ZipkinLocalSpanTracker {
             if (this.closableSpans.get(cachedSpan) == null) {
                 break;
             }
+            markSpanFinished(cachedSpan.span);
             this.closableSpans.remove(cachedSpan);
             this.openedSpans.remove(cachedSpan);
         }

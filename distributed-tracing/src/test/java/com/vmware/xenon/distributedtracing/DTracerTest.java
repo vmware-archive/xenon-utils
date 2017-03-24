@@ -15,11 +15,11 @@ package com.vmware.xenon.distributedtracing;
 
 import java.util.UUID;
 
-import junit.framework.TestCase;
-
 import org.junit.After;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import junit.framework.TestCase;
 
 public class DTracerTest extends TestCase {
 
@@ -68,8 +68,8 @@ public class DTracerTest extends TestCase {
         TestTracingHost h = null;
         try {
             h = launchService(tmpFolder);
-            assertTrue(h.getTracer().getServiceTracer().getClosableSpans().size() > 0);
-            assertTrue(h.getTracer().getServiceTracer().getOpenedSpans().size() > 0);
+            assertTrue(h.getTracer().getServiceTracer().getClosableSpans().size() == 0);
+            assertTrue(h.getTracer().getServiceTracer().getOpenedSpans().size() == 0);
         } finally {
             assertNotNull(h);
             h.stop();

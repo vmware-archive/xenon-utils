@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -181,6 +182,7 @@ class SwaggerAssembler {
 
     private void completion(Map<Long, Operation> ops, Map<Long, Throwable> errors) {
         try {
+            Map<String, Operation> sortedOps = new TreeMap<>();
             for (Map.Entry<Long, Operation> e : ops.entrySet()) {
                 // ignore failed ops
                 if (errors != null && errors.containsKey(e.getKey())) {
@@ -193,7 +195,12 @@ class SwaggerAssembler {
                 this.currentTag = new Tag();
                 this.currentTag.setName(uri);
 
-                addOperation(uri, e.getValue());
+                sortedOps.put(uri, e.getValue());
+            }
+
+            // Add operations in sorted order
+            for (Map.Entry<String, Operation> e : sortedOps.entrySet()) {
+                this.addOperation(e.getKey(), e.getValue());
             }
 
             this.swagger.setDefinitions(this.modelRegistry.getDefinitions());

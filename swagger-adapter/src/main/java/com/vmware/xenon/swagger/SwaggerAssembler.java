@@ -191,10 +191,6 @@ class SwaggerAssembler {
 
                 String uri = UriUtils.getParentPath(e.getValue().getUri().getPath());
 
-                // use service base path as tag if there is no custom value present
-                this.currentTag = new Tag();
-                this.currentTag.setName(uri);
-
                 sortedOps.put(uri, e.getValue());
             }
 
@@ -227,6 +223,10 @@ class SwaggerAssembler {
 
     private void addOperation(String uri, Operation op) {
         ServiceDocumentQueryResult q = op.getBody(ServiceDocumentQueryResult.class);
+
+        // use service base path as tag if there is no custom value present
+        this.currentTag = new Tag();
+        this.currentTag.setName(uri);
 
         if (q.documents != null) {
             Object firstDoc = q.documents.values().iterator().next();

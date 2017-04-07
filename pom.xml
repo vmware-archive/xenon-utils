@@ -15,5 +15,6 @@
     <module>logging</module>
     <module>swagger-adapter</module>
     <module>xenon-gateway</module>
+    <module>kotlin</module>
   </modules>
 </project>

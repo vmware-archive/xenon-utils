@@ -17,3 +17,4 @@ target
 # maven-release-plugin artifacts
 /release.properties
 pom.xml.releaseBackup
+.vscode/

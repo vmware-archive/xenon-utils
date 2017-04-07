@@ -27,7 +27,7 @@ fi
 echo
 
 # XXX: can brake
-RELEASE_VERSION=$(git show ${COMMIT}:pom.xml | head -10 | grep '<version>' | sed -e 's/^.*>\(.*\)<.*$/\1/')
+RELEASE_VERSION=$(git show ${COMMIT}:./pom.xml | head -10 | grep '<version>' | sed 's/^.*>\(.*\)<.*$/\1/')
 
 if echo ${RELEASE_VERSION} | grep -- '-SNAPSHOT$' > /dev/null; then
   echo "RELEASE_VERSION found in ${COMMIT} must be a release version, found ${RELEASE_VERSION}"

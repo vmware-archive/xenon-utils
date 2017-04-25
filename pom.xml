@@ -14,5 +14,6 @@
     <module>distributed-tracing</module>
     <module>logging</module>
     <module>swagger-adapter</module>
+    <module>javaee-adapter</module>
   </modules>
 </project>

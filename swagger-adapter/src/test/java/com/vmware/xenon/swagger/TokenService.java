@@ -77,7 +77,6 @@ public class TokenService extends StatelessService {
         return opProcessingChain;
     }
 
-
     @Override
     public void handleGet(Operation op) {
         Token response = new Token();
@@ -129,8 +128,8 @@ public class TokenService extends StatelessService {
         if (d.documentDescription.serviceRequestRoutes == null) {
             d.documentDescription.serviceRequestRoutes = new HashMap<>();
         }
-        d.documentDescription.name = "Custom Tag Name";
-        d.documentDescription.description = "Custom Service Description";
+        d.documentDescription.name = "Custom Token Service";
+        d.documentDescription.description = "Custom Token Service Description";
 
         Route route = new Route();
         route.action = Action.POST;

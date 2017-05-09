@@ -15,6 +15,7 @@ package com.vmware.xenon.swagger;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -69,6 +70,7 @@ public class TestSwaggerDescriptorService {
     @BeforeClass
     public static void setup() throws Throwable {
         host = VerificationHost.create(0);
+        System.out.println("Host details: " + host);
 
         SwaggerDescriptorService swagger = new SwaggerDescriptorService();
         Info info = new Info();
@@ -254,8 +256,8 @@ public class TestSwaggerDescriptorService {
 
         // Custom Tag name and description
         swagger.getTags().stream().forEach((t) -> {
-            if (t.getName().equals("Custom Tag Name")) {
-                assertEquals("Custom Service Description", t.getDescription());
+            if (t.getName().equals("Custom Token Service")) {
+                assertEquals("Custom Token Service Description", t.getDescription());
             }
         });
 
@@ -270,7 +272,6 @@ public class TestSwaggerDescriptorService {
         assertNotNull(p);
         assertNotNull(p.getPost());
         assertNotNull(p.getGet());
-
 
         assertNotNull(swagger.getPath("/cars/template"));
         assertNotNull(swagger.getPath("/cars/available"));
@@ -292,13 +293,30 @@ public class TestSwaggerDescriptorService {
         assertNotNull(p.getGet());
         assertNotNull(p.getPut());
 
+        io.swagger.models.Operation opPut = p.getPut();
+        assertNotNull(opPut);
+        assertEquals("Description of a car", opPut.getDescription());
+        List<Parameter> parameters = opPut.getParameters();
+        assertNotNull(parameters);
+        // look for a single query parameter
+        assertEquals(1, parameters.size());
+        parameters.stream().forEach((param) -> {
+            assertTrue(param instanceof QueryParameter);
+            assertFalse(param.getDescription().startsWith("@"));
+        });
+        // look for 3 (not the usual 2) response codes
+        assertEquals(3, opPut.getResponses().size());
+        // check consumes + produces
+        assertEquals(2, opPut.getConsumes().size());
+        assertEquals(2, opPut.getProduces().size());
+
         p = swagger.getPath("/tokens");
         assertNotNull(p);
         io.swagger.models.Operation opGet = p.getGet();
         assertNotNull(opGet);
-        assertEquals("Custom Tag Name", opGet.getTags().get(0));
+        assertEquals("Custom Token Service", opGet.getTags().get(0));
         assertEquals("Short version / Long version", opGet.getDescription());
-        List<Parameter> parameters = opGet.getParameters();
+        parameters = opGet.getParameters();
         assertNotNull(parameters);
         assertEquals(2, parameters.size());
         parameters.stream().forEach((param) -> {
@@ -311,11 +329,11 @@ public class TestSwaggerDescriptorService {
         assertNotNull(p.getPost());
         assertNotNull(p.getPost().getParameters());
         assertNotNull(p.getPatch());
-        assertNull(p.getDelete());
+        assertNotNull(p.getDelete());
 
-        io.swagger.models.Operation opPut = p.getPut();
+        opPut = p.getPut();
         assertNotNull(opPut);
-        assertEquals("Custom Tag Name", opPut.getTags().get(0));
+        assertEquals("Custom Token Service", opPut.getTags().get(0));
         assertEquals("Replace user-token mapping", opPut.getDescription());
         parameters = opPut.getParameters();
         assertNotNull(parameters);

@@ -14,11 +14,11 @@
 package com.vmware.xenon.swagger;
 
 import java.nio.ByteBuffer;
-import java.util.EnumSet;
 
 import io.swagger.models.Info;
 
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.RequestRouter.Route.SupportLevel;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.ServiceHost;
@@ -34,8 +34,11 @@ public class SwaggerDescriptorService extends StatelessService {
     public static final String SELF_LINK = ServiceUriPaths.SWAGGER;
 
     private Info info;
-    private String[] excludedPrefixes;
+    private String[] excludedPrefixes = new String[] { "/core/" };
     private boolean excludeUtilities;
+
+    // default to document only APIs annotated with PUBLIC
+    private SupportLevel supportLevel = SupportLevel.PUBLIC;
 
     public SwaggerDescriptorService() {
         super(ServiceDocument.class);
@@ -69,6 +72,15 @@ public class SwaggerDescriptorService extends StatelessService {
         this.excludeUtilities = excludeUtilities;
     }
 
+    /**
+     * When supportLevel is set, then only Routes
+     * which have the given Route.SpportLevel or above are included
+     * in the documentation
+     */
+    public void setSupportLevel(SupportLevel supportLevel) {
+        this.supportLevel = supportLevel;
+    }
+
     @Override
     public void handleStart(Operation start) {
         logInfo("Swagger UI available at: %s", getHost().getPublicUri()
@@ -84,24 +96,19 @@ public class SwaggerDescriptorService extends StatelessService {
             addCompressHandler(get);
         }
 
-        Operation op = Operation.createGet(this, "/");
+        Operation op = Operation.createGet(this, "/?includes=ALL&excludes=FACTORY_ITEM");
         op.setCompletion((o, e) -> {
             SwaggerAssembler
                     .create(this)
                     .setExcludedPrefixes(this.excludedPrefixes)
+                    .setSupportLevel(this.supportLevel)
                     .setInfo(this.info)
                     .setExcludeUtilities(this.excludeUtilities)
                     .setQueryResult(o.getBody(ServiceDocumentQueryResult.class))
                     .build(get);
         });
 
-        getHost().queryServiceUris(
-                // all services
-                EnumSet.noneOf(ServiceOption.class),
-                true,
-                op,
-                // exclude factory items
-                EnumSet.of(ServiceOption.FACTORY_ITEM));
+        op.sendWith(this);
     }
 
     private void addCompressHandler(Operation get) {

@@ -15,17 +15,15 @@ package com.vmware.xenon.swagger;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import static com.vmware.xenon.common.Operation.CONTENT_ENCODING_GZIP;
-
 import java.io.IOException;
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 
@@ -64,11 +62,10 @@ public class TestSwaggerDescriptorService {
     public static final String INFO_TERMS_OF_SERVICE = "terms of service";
     public static VerificationHost host;
 
-    private static final String ACCEPT_ENCODING_HEADER = "accept-encoding";
-
     @BeforeClass
     public static void setup() throws Throwable {
         host = VerificationHost.create(0);
+        System.out.println("Host details: " + host);
 
         SwaggerDescriptorService swagger = new SwaggerDescriptorService();
         Info info = new Info();
@@ -134,7 +131,7 @@ public class TestSwaggerDescriptorService {
         Operation op = Operation
                 .createGet(UriUtils.buildUri(host, SwaggerDescriptorService.SELF_LINK))
                 .setReferer(host.getUri())
-                .addRequestHeader(ACCEPT_ENCODING_HEADER, CONTENT_ENCODING_GZIP);
+                .addRequestHeader(Operation.ACCEPT_ENCODING_HEADER, Operation.CONTENT_ENCODING_GZIP);
         Operation result = null;
         Throwable error = null;
         try {
@@ -212,36 +209,11 @@ public class TestSwaggerDescriptorService {
             }
         }
 
-        decompressResponse(o);
-
         try {
             Swagger swagger = Json.mapper().readValue(o.getBody(String.class), Swagger.class);
             assertSwagger(swagger);
         } catch (IOException ioe) {
             fail(ioe.getMessage());
-        }
-    }
-
-    private void decompressResponse(Operation o) {
-        String acceptEncoding = o.getRequestHeader(ACCEPT_ENCODING_HEADER);
-        if (acceptEncoding != null && acceptEncoding.contains(CONTENT_ENCODING_GZIP)) {
-            acceptEncoding = CONTENT_ENCODING_GZIP;
-        }
-
-        String encoding = o.getResponseHeader(Operation.CONTENT_ENCODING_HEADER);
-
-        if (CONTENT_ENCODING_GZIP.equals(acceptEncoding)
-                && CONTENT_ENCODING_GZIP.equals(encoding)) {
-            try {
-                byte[] bytes = o.getBody(byte[].class);
-                Utils.decodeBody(o, ByteBuffer.wrap(bytes), false, true);
-            } catch (Exception ex) {
-                fail(ex.getMessage());
-            }
-        } else if (CONTENT_ENCODING_GZIP.equals(acceptEncoding)
-                || CONTENT_ENCODING_GZIP.equals(encoding)) {
-            fail(String.format("Wrong encoding accept-encoding=%s, encoding=%s",
-                    acceptEncoding, encoding));
         }
     }
 
@@ -254,8 +226,8 @@ public class TestSwaggerDescriptorService {
 
         // Custom Tag name and description
         swagger.getTags().stream().forEach((t) -> {
-            if (t.getName().equals("Custom Tag Name")) {
-                assertEquals("Custom Service Description", t.getDescription());
+            if (t.getName().equals("Custom Token Service")) {
+                assertEquals("Custom Token Service Description", t.getDescription());
             }
         });
 
@@ -270,7 +242,6 @@ public class TestSwaggerDescriptorService {
         assertNotNull(p);
         assertNotNull(p.getPost());
         assertNotNull(p.getGet());
-
 
         assertNotNull(swagger.getPath("/cars/template"));
         assertNotNull(swagger.getPath("/cars/available"));
@@ -292,13 +263,30 @@ public class TestSwaggerDescriptorService {
         assertNotNull(p.getGet());
         assertNotNull(p.getPut());
 
+        io.swagger.models.Operation opPut = p.getPut();
+        assertNotNull(opPut);
+        assertEquals("Description of a car", opPut.getDescription());
+        List<Parameter> parameters = opPut.getParameters();
+        assertNotNull(parameters);
+        // look for a single query parameter
+        assertEquals(1, parameters.size());
+        parameters.stream().forEach((param) -> {
+            assertTrue(param instanceof QueryParameter);
+            assertFalse(param.getDescription().startsWith("@"));
+        });
+        // look for 3 (not the usual 2) response codes
+        assertEquals(3, opPut.getResponses().size());
+        // check consumes + produces
+        assertEquals(2, opPut.getConsumes().size());
+        assertEquals(2, opPut.getProduces().size());
+
         p = swagger.getPath("/tokens");
         assertNotNull(p);
         io.swagger.models.Operation opGet = p.getGet();
         assertNotNull(opGet);
-        assertEquals("Custom Tag Name", opGet.getTags().get(0));
+        assertEquals("Custom Token Service", opGet.getTags().get(0));
         assertEquals("Short version / Long version", opGet.getDescription());
-        List<Parameter> parameters = opGet.getParameters();
+        parameters = opGet.getParameters();
         assertNotNull(parameters);
         assertEquals(2, parameters.size());
         parameters.stream().forEach((param) -> {
@@ -311,11 +299,11 @@ public class TestSwaggerDescriptorService {
         assertNotNull(p.getPost());
         assertNotNull(p.getPost().getParameters());
         assertNotNull(p.getPatch());
-        assertNull(p.getDelete());
+        assertNotNull(p.getDelete());
 
-        io.swagger.models.Operation opPut = p.getPut();
+        opPut = p.getPut();
         assertNotNull(opPut);
-        assertEquals("Custom Tag Name", opPut.getTags().get(0));
+        assertEquals("Custom Token Service", opPut.getTags().get(0));
         assertEquals("Replace user-token mapping", opPut.getDescription());
         parameters = opPut.getParameters();
         assertNotNull(parameters);

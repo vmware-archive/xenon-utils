@@ -14,15 +14,18 @@
 package com.vmware.xenon.swagger;
 
 import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.Map;
 
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.RequestRouter.Route;
+import com.vmware.xenon.common.RequestRouter.Route.RouteDocumentation;
+import com.vmware.xenon.common.RequestRouter.Route.RouteDocumentation.ApiResponse;
+import com.vmware.xenon.common.RequestRouter.Route.RouteDocumentation.QueryParam;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
+
 
 /**
  */
@@ -37,8 +40,30 @@ public class CarService extends StatefulService {
         return FactoryService.create(CarService.class, Car.class);
     }
 
+    @RouteDocumentation(description = "@CAR",
+            queryParams = {
+                @QueryParam(description = "@TEAPOT",
+                        example = "false", name = "teapot", required = false, type = "boolean")
+            },
+            consumes = { "application/json", "app/json" },
+            produces = { "application/json", "app/json" },
+            responses = {
+                @ApiResponse(statusCode = 200, description = "OK"),
+                @ApiResponse(statusCode = 404, description = "Not Found"),
+                @ApiResponse(statusCode = 418, description = "I'm a teapot!")
+            })
+    @Override
     public void handlePut(Operation put) {
-        this.setState(put, put.getBody(Car.class));
+        boolean teapot = false;
+        if (put.getUri().getQuery() != null) {
+            Map<String,String> queryParams = UriUtils.parseUriQueryParams(put.getUri());
+            teapot = Boolean.parseBoolean(queryParams.get("teapot"));
+        }
+        if (teapot) {
+            put.setStatusCode(418); // I'm a teapot
+        } else {
+            this.setState(put, put.getBody(Car.class));
+        }
         put.complete();
     }
 
@@ -55,25 +80,10 @@ public class CarService extends StatefulService {
         public URI manufacturerHomePage;
         public double length;
         public double weight;
-        @Documentation(description = "Make of the car", exampleString = "BMW")
+        @Documentation(description = "@MAKE", exampleString = "BMW")
         public String make;
         @Documentation(description = "License plate of the car", exampleString = "XXXAAAA")
         public String licensePlate;
         public EngineInfo engineInfo;
-    }
-
-    @Override
-    public ServiceDocument getDocumentTemplate() {
-        ServiceDocument d = super.getDocumentTemplate();
-        d.documentDescription.serviceRequestRoutes = new HashMap<>();
-
-        Route route = new Route();
-        route.action = Action.PUT;
-        route.description = "Updates car properties";
-        route.requestType = Car.class;
-
-        d.documentDescription.serviceRequestRoutes
-                .put(route.action, Collections.singletonList(route));
-        return d;
     }
 }

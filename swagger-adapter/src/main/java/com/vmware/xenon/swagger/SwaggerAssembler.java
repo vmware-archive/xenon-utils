@@ -23,10 +23,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -43,6 +46,8 @@ import io.swagger.models.parameters.BodyParameter;
 import io.swagger.models.parameters.Parameter;
 import io.swagger.models.parameters.PathParameter;
 import io.swagger.models.parameters.QueryParameter;
+import io.swagger.models.properties.BooleanProperty;
+import io.swagger.models.properties.IntegerProperty;
 import io.swagger.models.properties.Property;
 import io.swagger.models.properties.RefProperty;
 import io.swagger.models.properties.StringProperty;
@@ -74,6 +79,7 @@ import com.vmware.xenon.services.common.ServiceUriPaths;
 /**
  */
 class SwaggerAssembler {
+
     public static final String PARAM_NAME_BODY = "body";
     public static final String PARAM_NAME_ID = "id";
     public static final String DESCRIPTION_SUCCESS = "Success";
@@ -134,7 +140,8 @@ class SwaggerAssembler {
                     } else if (link.startsWith(ServiceUriPaths.NODE_SELECTOR_PREFIX)) {
                         // skip node selectors
                         return null;
-                    } else if (link.startsWith(ServiceUriPaths.CORE + ServiceUriPaths.UI_PATH_SUFFIX)) {
+                    } else if (link
+                            .startsWith(ServiceUriPaths.CORE + ServiceUriPaths.UI_PATH_SUFFIX)) {
                         // skip UI
                         return null;
                     } else if (link.startsWith(ServiceUriPaths.UI_RESOURCES)) {
@@ -149,7 +156,8 @@ class SwaggerAssembler {
                             }
                         }
 
-                        return Operation.createGet(this.service, link + ServiceHost.SERVICE_URI_SUFFIX_TEMPLATE);
+                        return Operation.createGet(this.service,
+                                link + ServiceHost.SERVICE_URI_SUFFIX_TEMPLATE);
                     }
                 })
                 .filter(obj -> obj != null);
@@ -248,8 +256,8 @@ class SwaggerAssembler {
     }
 
     /**
-     * Updates current tag name and description if a non-null value is present in the
-     * ServiceDocumentDescription.
+     * Updates current tag name and description if a non-null value is present
+     * in the ServiceDocumentDescription.
      */
     private void updateCurrentTag(Tag currentTag, ServiceDocumentDescription documentDescription) {
         if (documentDescription != null) {
@@ -307,8 +315,7 @@ class SwaggerAssembler {
         deleteOrPost.addParameter(paramBody(template(ServiceSubscriber.class)));
         deleteOrPost.addTag(this.currentTag.getName());
         deleteOrPost.setResponses(responseMap(
-                Operation.STATUS_CODE_OK, responseOk(subscriptionState)
-        ));
+                Operation.STATUS_CODE_OK, responseOk(subscriptionState)));
         path.setDelete(deleteOrPost);
         path.setPost(deleteOrPost);
         return path;
@@ -340,11 +347,9 @@ class SwaggerAssembler {
         get.setResponses(responseMap(
                 Operation.STATUS_CODE_OK, responseOk(),
                 Operation.STATUS_CODE_UNAVAILABLE, responseNoContent(),
-                Operation.STATUS_CODE_NOT_FOUND, responseGenericError()
-        ));
+                Operation.STATUS_CODE_NOT_FOUND, responseGenericError()));
 
         path.setGet(get);
-
 
         io.swagger.models.Operation patchOrPut = new io.swagger.models.Operation();
         patchOrPut.addTag(this.currentTag.getName());
@@ -352,8 +357,7 @@ class SwaggerAssembler {
 
         patchOrPut.setResponses(responseMap(
                 Operation.STATUS_CODE_OK, responseOk(template(ServiceStats.class)),
-                Operation.STATUS_CODE_NOT_FOUND, responseGenericError()
-        ));
+                Operation.STATUS_CODE_NOT_FOUND, responseGenericError()));
 
         path.put(patchOrPut);
         path.patch(patchOrPut);
@@ -376,8 +380,7 @@ class SwaggerAssembler {
 
         op.setResponses(responseMap(
                 Operation.STATUS_CODE_OK, responseOk(template(ServiceConfiguration.class)),
-                Operation.STATUS_CODE_NOT_FOUND, responseGenericError()
-        ));
+                Operation.STATUS_CODE_NOT_FOUND, responseGenericError()));
         path.setGet(op);
 
         op = new io.swagger.models.Operation();
@@ -386,8 +389,7 @@ class SwaggerAssembler {
                 Collections.singletonList(paramBody(ServiceConfigUpdateRequest.class)));
         op.setResponses(responseMap(
                 Operation.STATUS_CODE_OK, responseOk(template(ServiceConfiguration.class)),
-                Operation.STATUS_CODE_NOT_FOUND, responseGenericError()
-        ));
+                Operation.STATUS_CODE_NOT_FOUND, responseGenericError()));
         path.setPatch(op);
 
         return path;
@@ -404,23 +406,18 @@ class SwaggerAssembler {
         get.addTag(this.currentTag.getName());
         get.setResponses(responseMap(
                 Operation.STATUS_CODE_OK, responseOk(template(ServiceStats.class)),
-                Operation.STATUS_CODE_NOT_FOUND, responseGenericError()
-        ));
+                Operation.STATUS_CODE_NOT_FOUND, responseGenericError()));
         path.set(Service.Action.GET.name().toLowerCase(), get);
-
 
         io.swagger.models.Operation put = new io.swagger.models.Operation();
         put.addTag(this.currentTag.getName());
         put.setParameters(Arrays.asList(
                 paramNamedBody(template(ServiceStats.class)),
-                paramNamedBody(ServiceStats.ServiceStat.class)
-        ));
+                paramNamedBody(ServiceStats.ServiceStat.class)));
         put.setResponses(responseMap(
                 Operation.STATUS_CODE_OK, responseOk(template(ServiceStats.class)),
-                Operation.STATUS_CODE_NOT_FOUND, responseGenericError()
-        ));
+                Operation.STATUS_CODE_NOT_FOUND, responseGenericError()));
         path.put(put);
-
 
         io.swagger.models.Operation post = new io.swagger.models.Operation();
         post.addTag(this.currentTag.getName());
@@ -428,8 +425,7 @@ class SwaggerAssembler {
 
         post.setResponses(responseMap(
                 Operation.STATUS_CODE_OK, responseOk(template(ServiceStats.class)),
-                Operation.STATUS_CODE_NOT_FOUND, responseGenericError()
-        ));
+                Operation.STATUS_CODE_NOT_FOUND, responseGenericError()));
 
         path.post(post);
         path.patch(post);
@@ -439,7 +435,7 @@ class SwaggerAssembler {
 
     private Parameter paramNamedBody(ServiceDocument template) {
         BodyParameter res = paramBody(template);
-        res.setName(PARAM_NAME_BODY + AS_SEPARATOR +  shortenKind(template.documentKind));
+        res.setName(PARAM_NAME_BODY + AS_SEPARATOR + shortenKind(template.documentKind));
         return res;
     }
 
@@ -493,8 +489,8 @@ class SwaggerAssembler {
             routeParams.stream().forEach((p) -> {
                 StringProperty stringProperty = new StringProperty();
                 stringProperty.setName(p.name);
-                stringProperty.setDescription(isBlank(p.description) ? route.description :
-                        p.description);
+                stringProperty
+                        .setDescription(isBlank(p.description) ? route.description : p.description);
                 stringProperty.setDefault(p.value);
                 stringProperty.setRequired(p.required);
                 stringProperty.setType(StringProperty.TYPE);
@@ -513,13 +509,28 @@ class SwaggerAssembler {
     private QueryParameter paramQuery(RequestRouter.Parameter routeParam, Route route) {
         QueryParameter queryParam = new QueryParameter();
         queryParam.setName(routeParam.name);
-        queryParam.setDescription(isBlank(routeParam.description) ? route.description :
-                routeParam.description);
+        queryParam.setDescription(isBlank(routeParam.description) ? route.description
+                : routeParam.description);
         queryParam.setRequired(routeParam.required);
         // Setting the type to be lowercase so that we match the swagger type.
         queryParam.setType(routeParam.type != null ? routeParam.type.toLowerCase() : "");
         queryParam.setDefaultValue(routeParam.value);
         return queryParam;
+    }
+
+    private Response paramResponse(RequestRouter.Parameter routeParam, Route route) {
+        Response response = new Response();
+        response.setDescription(routeParam.description);
+        if (routeParam.type == null) {
+            return response;
+        }
+        try {
+            Class<?> clazz = Class.forName(routeParam.type);
+            response.setSchema(refProperty(modelForPodo(clazz)));
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(SwaggerAssembler.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return response;
     }
 
     private ModelImpl modelForPodo(Class<?> type) {
@@ -576,9 +587,9 @@ class SwaggerAssembler {
     }
 
     /**
-     * Builds a map with a fluent syntax. args must be of even length.
-     * Every even argument must be of type {@link Response}. Every odd arg
-     * is coerced to string.
+     * Builds a map with a fluent syntax. args must be of even length. Every
+     * even argument must be of type {@link Response}. Every odd arg is coerced
+     * to string.
      *
      * @param args
      * @return non-null map
@@ -600,8 +611,7 @@ class SwaggerAssembler {
 
         op.setResponses(responseMap(
                 Operation.STATUS_CODE_OK, responseOk(doc),
-                Operation.STATUS_CODE_NOT_FOUND, responseGenericError()
-        ));
+                Operation.STATUS_CODE_NOT_FOUND, responseGenericError()));
         return op;
     }
 
@@ -627,6 +637,7 @@ class SwaggerAssembler {
                 && doc.documentDescription.serviceRequestRoutes != null
                 && !doc.documentDescription.serviceRequestRoutes.isEmpty()) {
             Path pathByRoutes = pathByRoutes(doc.documentDescription.serviceRequestRoutes.values());
+            path.setGet(pathByRoutes.getGet());
             path.setPost(pathByRoutes.getPost());
             path.setPut(pathByRoutes.getPut());
             path.setPatch(pathByRoutes.getPatch());
@@ -637,8 +648,7 @@ class SwaggerAssembler {
             op.setParameters(Collections.singletonList(paramBody(ServiceDocument.class)));
             op.setResponses(responseMap(
                     Operation.STATUS_CODE_OK, responseOk(doc),
-                    Operation.STATUS_CODE_NOT_FOUND, responseGenericError()
-            ));
+                    Operation.STATUS_CODE_NOT_FOUND, responseGenericError()));
 
             // service definition should be introspected to better
             // describe which actions are supported
@@ -664,16 +674,33 @@ class SwaggerAssembler {
                 io.swagger.models.Operation op = new io.swagger.models.Operation();
                 op.addTag(this.currentTag.getName());
                 op.setDescription(route.description);
+                List<Parameter> swaggerParams = new ArrayList<>();
+                Map<String, Response> swaggerResponses = new LinkedHashMap<>();
+                List<String> consumesList = new ArrayList<>();
+                List<String> producesList = new ArrayList<>();
 
-                if (route.parameters != null) {
+                if (route.parameters != null && !route.parameters.isEmpty()) {
                     // From the parameters list split body / query parameters
                     List<RequestRouter.Parameter> bodyParams = new ArrayList<>();
-                    List<Parameter> swaggerParams = new ArrayList<>();
                     route.parameters.stream().forEach((p) -> {
-                        if (p.paramDef == RequestRouter.ParamDef.BODY) {
+                        switch (p.paramDef) {
+                        case BODY:
                             bodyParams.add(p);
-                        } else {
+                            break;
+                        case QUERY:
                             swaggerParams.add(paramQuery(p, route));
+                            break;
+                        case RESPONSE:
+                            swaggerResponses.put(p.name, paramResponse(p, route));
+                            break;
+                        case CONSUMES:
+                            consumesList.add(p.name);
+                            break;
+                        case PRODUCES:
+                            producesList.add(p.name);
+                            break;
+                        default:
+                            break;
                         }
                     });
                     // This is to handle the use case of having multiple values in the body for a
@@ -681,16 +708,27 @@ class SwaggerAssembler {
                     if (!bodyParams.isEmpty()) {
                         swaggerParams.add(paramBody(bodyParams, route));
                     }
-                    op.setParameters(swaggerParams);
                 } else if (route.requestType != null) {
-                    op.setParameters(Collections.singletonList(paramBody(route.requestType)));
+                    swaggerParams.add(paramBody(route.requestType));
+                }
+                if (!swaggerParams.isEmpty()) {
+                    op.setParameters(swaggerParams);
                 }
 
-                // Add default response codes
-                op.setResponses(responseMap(
-                        Operation.STATUS_CODE_OK, responseOk(route.responseType),
-                        Operation.STATUS_CODE_NOT_FOUND, responseGenericError()
-                ));
+                if (swaggerResponses.isEmpty()) {
+                    // Add default response codes
+                    op.setResponses(responseMap(
+                            Operation.STATUS_CODE_OK, responseOk(route.responseType),
+                            Operation.STATUS_CODE_NOT_FOUND, responseGenericError()));
+                } else {
+                    op.setResponses(swaggerResponses);
+                }
+                if (!consumesList.isEmpty()) {
+                    op.setConsumes(consumesList);
+                }
+                if (!producesList.isEmpty()) {
+                    op.setProduces(producesList);
+                }
 
                 switch (route.action) {
                 case POST:
@@ -712,7 +750,8 @@ class SwaggerAssembler {
                     path.options(getSwaggerOperation(op, path.getOptions()));
                     break;
                 default:
-                    throw new IllegalStateException("Unknown route action encounter: " + route.action);
+                    throw new IllegalStateException(
+                            "Unknown route action encounter: " + route.action);
                 }
             }
         }
@@ -743,34 +782,48 @@ class SwaggerAssembler {
         return path;
     }
 
+    private static final String[][] FACTORY_QUERY_PARAMS = new String[][]{
+        /* Array of factory query documentation, each row contains queryParam, description, type, example, default */
+        new String[]{UriUtils.URI_PARAM_ODATA_EXPAND_NO_DOLLAR_SIGN, "Expand document contents", BooleanProperty.TYPE, "false", "false"},
+        new String[]{UriUtils.URI_PARAM_ODATA_FILTER, "OData filter expression", StringProperty.TYPE, "(name eq test)", null},
+        new String[]{UriUtils.URI_PARAM_ODATA_SELECT, "Comma-separated list of fields to populate in query result", StringProperty.TYPE, "name,tags", null},
+        new String[]{UriUtils.URI_PARAM_ODATA_LIMIT, "Set maximum number of documents to return in this query", IntegerProperty.TYPE, "10", null},
+        new String[]{UriUtils.URI_PARAM_ODATA_TENANTLINKS, "Comma-separated list", StringProperty.TYPE, null, null}, // below are not yet implemented in runtime
+    //        new String[] { UriUtils.URI_PARAM_ODATA_SKIP, "Expand document contents", BooleanProperty.TYPE, null },
+    //        new String[] { UriUtils.URI_PARAM_ODATA_ORDER_BY, "Sort respondses", StringProperty.TYPE, null },
+    //        new String[] { UriUtils.URI_PARAM_ODATA_TOP, "Expand document contents", StringProperty.TYPE, null },
+    //        new String[] { UriUtils.URI_PARAM_ODATA_COUNT, "Expand document contents", BooleanProperty.TYPE, null },
+    //        new String[] { UriUtils.URI_PARAM_ODATA_SKIP_TO, "Expand document contents", BooleanProperty.TYPE, null },
+    //        new String[] { UriUtils.URI_PARAM_ODATA_NODE, "Expand document contents", BooleanProperty.TYPE, null },
+    };
+
     private io.swagger.models.Operation opFactoryGetInstances() {
         io.swagger.models.Operation op = new io.swagger.models.Operation();
         op.addTag(this.currentTag.getName());
         op.setResponses(responseMap(
-                Operation.STATUS_CODE_OK, responseOk(template(ServiceDocumentQueryResult.class))
-        ));
+                Operation.STATUS_CODE_OK, responseOk(template(ServiceDocumentQueryResult.class))));
+        op.setDescription("Query service instances");
 
-        QueryParameter p = new QueryParameter();
-        p.setName(UriUtils.URI_PARAM_ODATA_FILTER);
-        p.setType(StringProperty.TYPE);
-        op.addParameter(p);
-
-        p = new QueryParameter();
-        p.setName(UriUtils.URI_PARAM_ODATA_EXPAND_NO_DOLLAR_SIGN);
-        p.setType(StringProperty.TYPE);
-        op.addParameter(p);
-
+        for (String[] data : FACTORY_QUERY_PARAMS) {
+            QueryParameter p = new QueryParameter();
+            p.setName(data[0]);
+            p.setDescription(data[1]);
+            p.setType(data[2]);
+            p.setExample(data[3]);
+            p.setDefaultValue(data[4]);
+            p.setRequired(false);
+            op.addParameter(p);
+        }
         return op;
     }
 
     private io.swagger.models.Operation opCreateInstance(ServiceDocument doc) {
         io.swagger.models.Operation op = new io.swagger.models.Operation();
         op.addTag(this.currentTag.getName());
+        op.setDescription("Create service instance");
         op.setParameters(Collections.singletonList(paramBody(doc)));
         op.setResponses(responseMap(
-                Operation.STATUS_CODE_OK, responseOk(doc)
-        ));
-
+                Operation.STATUS_CODE_OK, responseOk(doc)));
         return op;
     }
 

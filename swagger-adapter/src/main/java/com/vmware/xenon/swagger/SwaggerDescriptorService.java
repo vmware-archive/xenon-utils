@@ -14,7 +14,6 @@
 package com.vmware.xenon.swagger;
 
 import java.nio.ByteBuffer;
-import java.util.EnumSet;
 
 import io.swagger.models.Info;
 
@@ -33,9 +32,13 @@ import com.vmware.xenon.services.common.ServiceUriPaths;
 public class SwaggerDescriptorService extends StatelessService {
     public static final String SELF_LINK = ServiceUriPaths.SWAGGER;
 
+    private static final String DEFAULT_QUERY_PARAMS = "?includes=ALL";
+    private static final String PUBLIC_QUERY_PARAMS = "?includes=PUBLIC";
+
     private Info info;
     private String[] excludedPrefixes;
     private boolean excludeUtilities;
+    private String queryParams = DEFAULT_QUERY_PARAMS;
 
     public SwaggerDescriptorService() {
         super(ServiceDocument.class);
@@ -69,6 +72,19 @@ public class SwaggerDescriptorService extends StatelessService {
         this.excludeUtilities = excludeUtilities;
     }
 
+    /**
+     * When publicOnly is set, then only services with the PUBLIC
+     * service option are included in documentation
+     * @param publicOnly
+     */
+    public void setPublicOnly(boolean publicOnly) {
+        if (publicOnly) {
+            this.queryParams = PUBLIC_QUERY_PARAMS;
+        } else {
+            this.queryParams = DEFAULT_QUERY_PARAMS;
+        }
+    }
+
     @Override
     public void handleStart(Operation start) {
         logInfo("Swagger UI available at: %s", getHost().getPublicUri()
@@ -84,7 +100,7 @@ public class SwaggerDescriptorService extends StatelessService {
             addCompressHandler(get);
         }
 
-        Operation op = Operation.createGet(this, "/");
+        Operation op = Operation.createGet(this, "/" + this.queryParams);
         op.setCompletion((o, e) -> {
             SwaggerAssembler
                     .create(this)
@@ -95,13 +111,7 @@ public class SwaggerDescriptorService extends StatelessService {
                     .build(get);
         });
 
-        getHost().queryServiceUris(
-                // all services
-                EnumSet.noneOf(ServiceOption.class),
-                true,
-                op,
-                // exclude factory items
-                EnumSet.of(ServiceOption.FACTORY_ITEM));
+        op.sendWith(this);
     }
 
     private void addCompressHandler(Operation get) {

@@ -24,6 +24,7 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.services.common.ExampleService;
+import com.vmware.xenon.services.common.RootNamespaceService;
 import com.vmware.xenon.ui.UiService;
 
 public class ExampleServiceHostWithSwagger extends ServiceHost {
@@ -48,9 +49,15 @@ public class ExampleServiceHostWithSwagger extends ServiceHost {
         info.setTitle("title");
         info.setVersion("version");
 
+        swagger.setExcludeUtilities(true);
         swagger.setInfo(info);
-        swagger.setExcludedPrefixes("/core/authz/");
         super.start();
+
+        super.startDefaultCoreServicesSynchronously();
+
+        // Start the root namespace factory: this will respond to the root URI (/) and list all
+        // the factory services.
+        super.startService(new RootNamespaceService());
 
         this.startService(swagger);
 

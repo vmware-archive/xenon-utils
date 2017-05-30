@@ -9,6 +9,7 @@
   <name>xenon-swagger-adapter</name>
   <url>https://github.com/vmware/xenon</url>
 
+
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <xenon.version>1.3.6</xenon.version>

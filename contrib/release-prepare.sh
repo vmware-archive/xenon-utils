@@ -17,11 +17,10 @@ COMMIT=$(git rev-parse HEAD)
 CHANGE_LOG_FILE=CHANGELOG.md
 UTILS_PROJECT=$(basename "$PWD")
 
-if [ "$(uname)" == "Darwin" ]; then
-  SED_PARAMS="-i ''"
-else
-  SED_PARAMS="-i"
-fi
+case $(sed --version 2>&1) in
+  *GNU*) SED_PARAMS="-i";;
+  *) set SED_PARAMS="-i ''";;
+esac
 
 if [ "${NEXT_DEV_VERSION}:-" == "" ]; then
   echo Must specify NEXT_DEV_VERSION
@@ -51,7 +50,7 @@ if ! git branch --contains ${COMMIT} -r | grep  origin/${BRANCH}; then
 fi
 
 # compute release version from pom
-CURRENT_VERSION=$(head -10 pom.xml | grep '<version>' | sed 's/^.*>\(.*\)<.*$/\1/')
+CURRENT_VERSION=$(head -10 pom.xml | grep '<version>' | sed -e 's/^.*>\(.*\)<.*$/\1/')
 RELEASE_VERSION=${CURRENT_VERSION%-SNAPSHOT}
 
 echo Preparing release of ${RELEASE_VERSION} from ${CURRENT_VERSION}
@@ -59,14 +58,14 @@ echo You are going to release ${RELEASE_VERSION} from ${COMMIT}
 git checkout -b prepare-release-${UTILS_PROJECT}-${RELEASE_VERSION}
 
 # create release version
-sed ${SED_PARAMS} "s/${CURRENT_VERSION}/${RELEASE_VERSION}/" ${CHANGE_LOG_FILE}
+sed ${SED_PARAMS} -e "s/${CURRENT_VERSION}/${RELEASE_VERSION}/" ${CHANGE_LOG_FILE}
 ./mvnw versions:set -DgenerateBackupPoms=false -DnewVersion=${RELEASE_VERSION}
 git commit -a -m "Mark ${UTILS_PROJECT}-${RELEASE_VERSION} for release"
 
 
 # create next development version entry
-sed ${SED_PARAMS} "1d" ${CHANGE_LOG_FILE}
-sed ${SED_PARAMS} "1i\\
+sed ${SED_PARAMS} -e "1d" ${CHANGE_LOG_FILE}
+sed ${SED_PARAMS} -e "1i\\
 # CHANGELOG\\
 \\
 ## ${NEXT_DEV_VERSION}\\

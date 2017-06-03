@@ -262,7 +262,7 @@ public class TestSwaggerDescriptorService {
         assertNull(swagger.getPath(ServiceUriPaths.CORE_AUTHZ_USERS));
         assertNull(swagger.getPath(ServiceUriPaths.CORE_AUTHZ_ROLES));
 
-        assertNotNull(swagger.getPath(ServiceUriPaths.CORE_PROCESSES));
+        assertNotNull(swagger.getPath(ServiceUriPaths.CORE_QUERY_TASKS));
         assertNotNull(swagger.getPath(ServiceUriPaths.CORE_CREDENTIALS));
 
         Path p = swagger.getPath("/cars");

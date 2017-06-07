@@ -15,9 +15,9 @@ package com.vmware.xenon.swagger;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import io.swagger.models.Model;
 import io.swagger.models.ModelImpl;
@@ -41,10 +41,10 @@ import com.vmware.xenon.common.ServiceDocumentDescription.PropertyUsageOption;
  * Aggregates and indexes ServiceDocumentDescription's by their kind.
  */
 class ModelRegistry {
-    private final HashMap<String, Model> byKind;
+    private final TreeMap<String, Model> byKind;
 
     public ModelRegistry() {
-        this.byKind = new HashMap<>();
+        this.byKind = new TreeMap<>();
     }
 
     public ModelImpl getModel(ServiceDocument template) {

@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.Ordering;
 import io.swagger.models.Info;
 import io.swagger.models.Model;
 import io.swagger.models.Path;
@@ -327,6 +328,8 @@ public class TestSwaggerDescriptorService {
             }
         });
         assertNotNull(opPut.getResponses());
+        assertTrue("Definitions are not sorted",
+                Ordering.natural().isOrdered(swagger.getDefinitions().keySet()));
 
         Model model = swagger.getDefinitions().get(Utils.buildKind(UserToken.class));
         Map<String, Property> properties = model.getProperties();

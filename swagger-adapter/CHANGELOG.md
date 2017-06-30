@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 0.0.5-SNAPSHOT
+
+
 ## 0.0.4
 * Bump xenon versions to 1.5.0
 

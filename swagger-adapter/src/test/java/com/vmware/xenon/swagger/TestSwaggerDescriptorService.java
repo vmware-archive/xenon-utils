@@ -76,6 +76,9 @@ public class TestSwaggerDescriptorService {
 
         swagger.setInfo(info);
         swagger.setExcludedPrefixes("/core/authz/");
+
+        swagger.setStripPackagePrefixes("com:vmware:xenon:common:");
+
         host.start();
 
         host.startService(swagger);
@@ -322,5 +325,10 @@ public class TestSwaggerDescriptorService {
         Model model = swagger.getDefinitions().get(Utils.buildKind(UserToken.class));
         Map<String, Property> properties = model.getProperties();
         assertNull(properties.get(UserToken.FIELD_NAME_INTERNAL_ID));
+
+        // validate that there's a stripped name from xenon:common
+        assertTrue(swagger.getDefinitions().containsKey("ServiceDocument"));
+        // and an unstripped one from xenon:services
+        assertTrue(swagger.getDefinitions().containsKey("com:vmware:xenon:services:common:QueryTask"));
     }
 }

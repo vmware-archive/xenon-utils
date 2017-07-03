@@ -33,6 +33,7 @@ public class SwaggerDescriptorService extends StatelessService {
 
     private Info info;
     private String[] excludedPrefixes = new String[] { "/core/" };
+    private String[] stripPackagePrefixes = new String[] { };
     private boolean excludeUtilities;
 
     // default to document only APIs annotated with PUBLIC
@@ -51,6 +52,18 @@ public class SwaggerDescriptorService extends StatelessService {
      */
     public void setExcludedPrefixes(String... excludedPrefixes) {
         this.excludedPrefixes = excludedPrefixes;
+    }
+
+    /**
+     * Strip the given package prefixes from type names in generated swagger.
+     * <p>
+     * This permits swagger definitions to be mapped to simpler type names, e.g.
+     * stripping
+     *
+     * @param excludedPrefixes
+     */
+    public void setStripPackagePrefixes(String... stripPackagePrefixes) {
+        this.stripPackagePrefixes = stripPackagePrefixes;
     }
 
     /**
@@ -94,6 +107,7 @@ public class SwaggerDescriptorService extends StatelessService {
             SwaggerAssembler
                     .create(this)
                     .setExcludedPrefixes(this.excludedPrefixes)
+                    .setStripPackagePrefixes(this.stripPackagePrefixes)
                     .setSupportLevel(this.supportLevel)
                     .setInfo(this.info)
                     .setExcludeUtilities(this.excludeUtilities)

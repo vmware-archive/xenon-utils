@@ -15,9 +15,13 @@ package com.vmware.xenon.swagger;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import io.swagger.models.Model;
 import io.swagger.models.ModelImpl;
@@ -41,19 +45,31 @@ import com.vmware.xenon.common.ServiceDocumentDescription.PropertyUsageOption;
  * Aggregates and indexes ServiceDocumentDescription's by their kind.
  */
 class ModelRegistry {
+
+    private static final Logger logger = Logger.getLogger(ModelRegistry.class.getName());
+
     private final TreeMap<String, Model> byKind;
+    private Set<String> stripPackagePrefixes;
 
     public ModelRegistry() {
         this.byKind = new TreeMap<>();
     }
 
+    public Set<String> getStripPackagePrefixes() {
+        return this.stripPackagePrefixes;
+    }
+
+    public void setStripPackagePrefixes(Set<String> stripPackagePrefixes) {
+        this.stripPackagePrefixes = stripPackagePrefixes;
+    }
+
     public ModelImpl getModel(ServiceDocument template) {
-        String kind = template.documentKind;
+        String kind = getStrippedKind(template.documentKind);
         ModelImpl model = (ModelImpl) this.byKind.get(kind);
 
         if (model == null) {
             model = load(template.documentDescription.propertyDescriptions.entrySet());
-            model.setName(template.documentKind);
+            model.setName(getStrippedKind(template.documentKind));
             this.byKind.put(kind, model);
         }
 
@@ -61,12 +77,13 @@ class ModelRegistry {
     }
 
     public ModelImpl getModel(PropertyDescription desc) {
-        ModelImpl model = (ModelImpl) this.byKind.get(desc.kind);
+        String kind = getStrippedKind(desc.kind);
+        ModelImpl model = (ModelImpl) this.byKind.get(kind);
 
         if (model == null) {
             model = load(desc.fieldDescriptions.entrySet());
-            model.setName(desc.kind);
-            this.byKind.put(desc.kind, model);
+            model.setName(kind);
+            this.byKind.put(kind, model);
         }
 
         return model;
@@ -129,17 +146,41 @@ class ModelRegistry {
     }
 
     private RefProperty refProperty(PropertyDescription pd) {
-        ModelImpl model = (ModelImpl) this.byKind.get(pd.kind);
+        String kind = getStrippedKind(pd.kind);
+        ModelImpl model = (ModelImpl) this.byKind.get(kind);
         if (model == null) {
             model = load(pd.fieldDescriptions.entrySet());
-            model.setName(pd.kind);
-            this.byKind.put(pd.kind, model);
+            model.setName(kind);
+            this.byKind.put(kind, model);
         }
 
-        return new RefProperty(pd.kind);
+        return new RefProperty(kind);
     }
 
     public Map<String, Model> getDefinitions() {
         return this.byKind;
+    }
+
+    private Map<String, String> strippedNames = new HashMap<>();
+
+    private String getStrippedKind(String documentKind) {
+        // look for and remove certain prefixes from documentKind
+        String name = this.strippedNames.get(documentKind);
+        if (name != null) {
+            return name;
+        }
+        name = documentKind;
+        for (String prefix : this.stripPackagePrefixes) {
+            if (documentKind.startsWith(prefix)) {
+                name = documentKind.substring(prefix.length());
+                if (this.strippedNames.values().contains(name)) {
+                    // collision - revert to original name
+                    logger.log(Level.WARNING, "Conflict in simplified swagger document names, cannot simplify: " + documentKind);
+                    name = documentKind;
+                }
+            }
+        }
+        this.strippedNames.put(documentKind, name);
+        return name;
     }
 }

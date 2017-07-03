@@ -114,6 +114,13 @@ class SwaggerAssembler {
         return this;
     }
 
+    public SwaggerAssembler setStripPackagePrefixes(String... stripPackagePrefixes) {
+        if (stripPackagePrefixes != null) {
+            this.modelRegistry.setStripPackagePrefixes(new HashSet<>(Arrays.asList(stripPackagePrefixes)));
+        }
+        return this;
+    }
+
     public SwaggerAssembler setExcludedPrefixes(String... excludedPrefixes) {
         if (excludedPrefixes != null) {
             this.excludedPrefixes = new HashSet<>(Arrays.asList(excludedPrefixes));

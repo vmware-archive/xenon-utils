@@ -326,6 +326,13 @@ public class TestSwaggerDescriptorService {
         Map<String, Property> properties = model.getProperties();
         assertNull(properties.get(UserToken.FIELD_NAME_INTERNAL_ID));
 
+        Model dq = swagger.getDefinitions().get("ServiceDocumentQueryResult");
+        Property documents = dq.getProperties().get("documents");
+        // we should really drill down here and check if "additionalProperties"
+        // is set to "object" as well, but the Property interface does
+        // not expose that
+        assertEquals(documents.getType(), "object");
+
         // validate that there's a stripped name from xenon:common
         assertTrue(swagger.getDefinitions().containsKey("ServiceDocument"));
         // and an unstripped one from xenon:services

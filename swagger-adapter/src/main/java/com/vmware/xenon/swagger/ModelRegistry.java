@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.TreeMap;
 
 import io.swagger.models.Model;
@@ -28,6 +29,7 @@ import io.swagger.models.properties.DateTimeProperty;
 import io.swagger.models.properties.DoubleProperty;
 import io.swagger.models.properties.LongProperty;
 import io.swagger.models.properties.MapProperty;
+import io.swagger.models.properties.ObjectProperty;
 import io.swagger.models.properties.Property;
 import io.swagger.models.properties.RefProperty;
 import io.swagger.models.properties.StringProperty;
@@ -116,8 +118,12 @@ class ModelRegistry {
         case LONG:
             return new LongProperty();
         case MAP:
-            return new MapProperty(new StringProperty());
+            return new MapProperty(makeProperty(pd.elementDescription));
         case PODO:
+            // special case for java.lang.Object
+            if (Objects.equals(pd.kind, com.vmware.xenon.common.Utils.buildKind(Object.class))) {
+                return new ObjectProperty();
+            }
             return refProperty(pd);
         case STRING:
             return new StringProperty();

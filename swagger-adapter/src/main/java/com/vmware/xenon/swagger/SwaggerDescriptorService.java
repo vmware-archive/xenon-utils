@@ -14,6 +14,8 @@
 package com.vmware.xenon.swagger;
 
 
+import java.util.EnumSet;
+
 import io.swagger.models.Info;
 
 import com.vmware.xenon.common.Operation;
@@ -102,7 +104,7 @@ public class SwaggerDescriptorService extends StatelessService {
 
     @Override
     public void handleGet(Operation get) {
-        Operation op = Operation.createGet(this, "/?includes=ALL&excludes=FACTORY_ITEM");
+        Operation op = Operation.createGet(this, "/");
         op.setCompletion((o, e) -> {
             SwaggerAssembler
                     .create(this)
@@ -115,6 +117,12 @@ public class SwaggerDescriptorService extends StatelessService {
                     .build(get);
         });
 
-        op.sendWith(this);
+        getHost().queryServiceUris(
+                // all services
+                EnumSet.noneOf(ServiceOption.class),
+                true,
+                op,
+                // exclude factory items
+                EnumSet.of(ServiceOption.FACTORY_ITEM));
     }
 }

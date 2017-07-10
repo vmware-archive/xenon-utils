@@ -111,7 +111,7 @@
       <artifactId>xenon-common</artifactId>
       <version>${xenon.version}</version>
       <type>test-jar</type>
-      <scope>compile</scope>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

@@ -60,7 +60,7 @@ public class SwaggerDescriptorService extends StatelessService {
      * This permits swagger definitions to be mapped to simpler type names, e.g.
      * stripping
      *
-     * @param excludedPrefixes
+     * @param stripPackagePrefixes
      */
     public void setStripPackagePrefixes(String... stripPackagePrefixes) {
         this.stripPackagePrefixes = stripPackagePrefixes;

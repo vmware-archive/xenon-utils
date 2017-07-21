@@ -1,10 +1,10 @@
 # CHANGELOG
 
 ## 0.0.6-SNAPSHOT
-
+* Upgrade swagger-ui to 3.0.19
 
 ## 0.0.5
-
+* Restore compatibility with xenon-1.5.2
 
 ## 0.0.4
 * Bump xenon versions to 1.5.0

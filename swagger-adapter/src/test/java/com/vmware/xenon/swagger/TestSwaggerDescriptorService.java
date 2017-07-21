@@ -187,7 +187,7 @@ public class TestSwaggerDescriptorService {
         assertEquals(Operation.STATUS_CODE_OK, o.getStatusCode());
 
         String body = o.getBody(String.class);
-        assertTrue(body.contains("swagger-ui-container"));
+        assertTrue(body.contains("StandaloneLayout"));
     }
 
     private void assertDescriptorJson(Operation o, Throwable e) {

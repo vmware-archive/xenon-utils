@@ -5,7 +5,7 @@
 
   <groupId>com.vmware.xenon</groupId>
   <artifactId>xenon-swagger-adapter</artifactId>
-  <version>0.0.5-SNAPSHOT</version>
+  <version>0.0.5</version>
   <name>xenon-swagger-adapter</name>
   <url>https://github.com/vmware/xenon</url>
 

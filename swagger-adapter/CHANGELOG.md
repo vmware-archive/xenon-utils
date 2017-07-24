@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 0.0.6-SNAPSHOT
+
+
 ## 0.0.5
 
 

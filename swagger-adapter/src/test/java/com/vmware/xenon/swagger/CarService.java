@@ -14,7 +14,9 @@
 package com.vmware.xenon.swagger;
 
 import java.net.URI;
+import java.time.ZonedDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
@@ -85,5 +87,9 @@ public class CarService extends StatefulService {
         @Documentation(description = "License plate of the car", exampleString = "XXXAAAA")
         public String licensePlate;
         public EngineInfo engineInfo;
+
+        public UUID internalId;
+
+        public ZonedDateTime goesOnSaleTime;
     }
 }

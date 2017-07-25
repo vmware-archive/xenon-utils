@@ -539,7 +539,9 @@ class SwaggerAssembler {
         }
         try {
             Class<?> clazz = Class.forName(routeParam.type);
-            response.setSchema(refProperty(modelForPodo(clazz)));
+            if (clazz != Void.class) {
+                response.setSchema(refProperty(modelForPodo(clazz)));
+            }
         } catch (ClassNotFoundException ex) {
             Logger.getLogger(SwaggerAssembler.class.getName()).log(Level.SEVERE, null, ex);
         }

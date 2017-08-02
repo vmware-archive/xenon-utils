@@ -18,12 +18,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import io.swagger.models.Model;
 import io.swagger.models.ModelImpl;
@@ -106,10 +104,12 @@ class ModelRegistry {
             property.description(pd.propertyDocumentation);
 
             if (pd.exampleValue instanceof Collection) {
-                Collection<?> col = (Collection) pd.exampleValue;
-                col = col.stream().filter(Objects::nonNull).collect(Collectors.toList());
-                property.setExample(col);
+                property.setExample((Object) null);
             }
+            if (pd.exampleValue != null && pd.exampleValue.getClass().isArray()) {
+                property.setExample((Object) null);
+            }
+
             res.addProperty(name, property);
         }
 

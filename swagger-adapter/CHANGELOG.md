@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.0.6-SNAPSHOT
+## 0.0.6
 * Upgrade swagger-ui to 3.0.19
 
 ## 0.0.5

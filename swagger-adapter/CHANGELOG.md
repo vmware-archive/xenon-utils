@@ -1,7 +1,8 @@
 # CHANGELOG
 
 ## 0.0.7-SNAPSHOT
-
+* Fix for swagger-adapter deployed in a host with enabled
+  authentication.
 
 ## 0.0.6
 * Upgrade swagger-ui to 3.0.19

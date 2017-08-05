@@ -15,7 +15,6 @@ package com.vmware.xenon.swagger;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -38,7 +37,6 @@ import io.swagger.models.parameters.QueryParameter;
 import io.swagger.models.properties.Property;
 import io.swagger.util.Json;
 import io.swagger.util.Yaml;
-
 import org.hamcrest.CoreMatchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -99,6 +97,9 @@ public class TestSwaggerDescriptorService {
 
         host.startService(Operation.createPost(UriUtils.buildUri(host, TokenService.class)),
                 new TokenService());
+
+        host.startService(Operation.createPost(UriUtils.buildUri(host, NsOwnerService.class)),
+                new NsOwnerService());
 
         host.waitForServiceAvailable(SwaggerDescriptorService.SELF_LINK);
     }
@@ -226,7 +227,6 @@ public class TestSwaggerDescriptorService {
         assertEquals(INFO_DESCRIPTION, swagger.getInfo().getDescription());
         assertEquals(INFO_TERMS_OF_SERVICE, swagger.getInfo().getTermsOfService());
 
-
         // Custom Tag name and description
         swagger.getTags().stream().forEach((t) -> {
             if (t.getName().equals("Custom Token Service")) {
@@ -258,7 +258,6 @@ public class TestSwaggerDescriptorService {
         assertNotNull(swagger.getPath("/cars/{id}/stats"));
         assertNotNull(swagger.getPath("/cars/{id}/subscriptions"));
 
-
         p = swagger.getPath("/cars/{id}");
         assertNotNull(p);
         assertNull(p.getPost());
@@ -272,10 +271,9 @@ public class TestSwaggerDescriptorService {
         List<Parameter> parameters = opPut.getParameters();
         assertNotNull(parameters);
         // look for a single query parameter
-        assertEquals(1, parameters.size());
+        assertEquals(2, parameters.size());
         parameters.stream().forEach((param) -> {
-            assertTrue(param instanceof QueryParameter);
-            assertFalse(param.getDescription().startsWith("@"));
+            assertTrue(param instanceof QueryParameter || param instanceof BodyParameter);
         });
         // look for 3 (not the usual 2) response codes
         assertEquals(3, opPut.getResponses().size());
@@ -330,5 +328,22 @@ public class TestSwaggerDescriptorService {
         assertTrue(swagger.getDefinitions().containsKey("ServiceDocument"));
         // and an unstripped one from xenon:services
         assertTrue(swagger.getDefinitions().containsKey("com:vmware:xenon:services:common:QueryTask"));
+
+        Path add = swagger.getPath("/calculate/{a}/ADD/{b}");
+        assertNotNull(add);
+        assertNotNull(add.getGet());
+        assertEquals(3, add.getGet().getParameters().size());
+        assertNotNull(
+                add.getGet().getParameters().stream().filter(param -> param.getName().equals("a")).findFirst().get());
+
+        assertNotNull(add.getGet().getParameters().stream().filter(param -> param.getName().equals("inject-error"))
+                .findFirst().get());
+
+        Path mult = swagger.getPath("/calculate/{a}/MULT/{b}");
+        assertNotNull(mult);
+        assertNotNull(mult.getGet());
+        assertEquals(2, mult.getGet().getParameters().size());
+        assertNotNull(
+                mult.getGet().getParameters().stream().filter(param -> param.getName().equals("a")).findFirst().get());
     }
 }

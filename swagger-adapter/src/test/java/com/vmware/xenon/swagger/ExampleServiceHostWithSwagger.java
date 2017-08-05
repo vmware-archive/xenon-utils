@@ -50,6 +50,12 @@ public class ExampleServiceHostWithSwagger extends ServiceHost {
         info.setVersion("version");
 
         swagger.setExcludeUtilities(true);
+        swagger.setExcludedPrefixes(
+                "/core/synch-tasks",
+                "/core/callbacks",
+                "/core/netty-maint-proxies",
+                "/core/query-page-forwarding",
+                "/core/service-context-index");
         swagger.setInfo(info);
         super.start();
 
@@ -77,6 +83,9 @@ public class ExampleServiceHostWithSwagger extends ServiceHost {
 
         this.startService(Operation.createPost(UriUtils.buildUri(this, TokenService.class)),
                 new TokenService());
+
+        this.startService(Operation.createPost(UriUtils.buildUri(this, NsOwnerService.class)),
+                new NsOwnerService());
 
         return this;
     }

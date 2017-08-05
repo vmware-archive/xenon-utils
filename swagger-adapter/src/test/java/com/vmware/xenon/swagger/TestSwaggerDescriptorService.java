@@ -38,7 +38,6 @@ import io.swagger.models.parameters.QueryParameter;
 import io.swagger.models.properties.Property;
 import io.swagger.util.Json;
 import io.swagger.util.Yaml;
-
 import org.hamcrest.CoreMatchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -99,6 +98,10 @@ public class TestSwaggerDescriptorService {
 
         host.startService(Operation.createPost(UriUtils.buildUri(host, TokenService.class)),
                 new TokenService());
+
+        host.startService(Operation.createPost(UriUtils.buildUri(host, NsOwnerService.class)),
+                new NsOwnerService());
+
 
         host.waitForServiceAvailable(SwaggerDescriptorService.SELF_LINK);
     }
@@ -330,5 +333,19 @@ public class TestSwaggerDescriptorService {
         assertTrue(swagger.getDefinitions().containsKey("ServiceDocument"));
         // and an unstripped one from xenon:services
         assertTrue(swagger.getDefinitions().containsKey("com:vmware:xenon:services:common:QueryTask"));
+
+        Path add = swagger.getPath("/calculate/{a}/ADD/{b}");
+        assertNotNull(add);
+        assertNotNull(add.getGet());
+        assertEquals(2, add.getGet().getParameters().size());
+        assertNotNull(
+                add.getGet().getParameters().stream().filter(param -> param.getName().equals("a")).findFirst().get());
+
+        Path mult = swagger.getPath("/calculate/{a}/MULT/{b}");
+        assertNotNull(mult);
+        assertNotNull(mult.getGet());
+        assertEquals(2, mult.getGet().getParameters().size());
+        assertNotNull(
+                mult.getGet().getParameters().stream().filter(param -> param.getName().equals("a")).findFirst().get());
     }
 }

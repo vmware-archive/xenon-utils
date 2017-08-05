@@ -16,7 +16,6 @@ package com.vmware.xenon.swagger;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,6 +25,8 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Level;
@@ -33,20 +34,23 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.google.gson.JsonObject;
 import io.swagger.models.Info;
 import io.swagger.models.Model;
 import io.swagger.models.ModelImpl;
 import io.swagger.models.Path;
 import io.swagger.models.RefModel;
 import io.swagger.models.Response;
-import io.swagger.models.Scheme;
 import io.swagger.models.Swagger;
 import io.swagger.models.Tag;
 import io.swagger.models.parameters.BodyParameter;
 import io.swagger.models.parameters.Parameter;
 import io.swagger.models.parameters.PathParameter;
 import io.swagger.models.parameters.QueryParameter;
+import io.swagger.models.properties.BooleanProperty;
+import io.swagger.models.properties.DoubleProperty;
 import io.swagger.models.properties.IntegerProperty;
+import io.swagger.models.properties.ObjectProperty;
 import io.swagger.models.properties.Property;
 import io.swagger.models.properties.RefProperty;
 import io.swagger.models.properties.StringProperty;
@@ -142,7 +146,7 @@ class SwaggerAssembler {
     public void build(Operation get) {
         this.get = get;
         this.swagger = new Swagger();
-        prepareSwagger();
+        prepareSwagger(get);
 
         Stream<Operation> ops = this.documentQueryResult.documentLinks
                 .stream()
@@ -173,27 +177,19 @@ class SwaggerAssembler {
                                 link + ServiceHost.SERVICE_URI_SUFFIX_TEMPLATE);
                     }
                 })
-                .filter(obj -> obj != null);
+                .filter(Objects::nonNull);
 
         OperationJoin.create(ops)
                 .setCompletion(this::completion)
                 .sendWith(this.service);
     }
 
-    private void prepareSwagger() {
+    private void prepareSwagger(Operation get) {
         List<String> json = Collections.singletonList(Operation.MEDIA_TYPE_APPLICATION_JSON);
         this.swagger.setConsumes(json);
         this.swagger.setProduces(json);
 
-        if (this.service.getHost().getSecureListener() != null) {
-            this.swagger.setSchemes(Collections.singletonList(Scheme.HTTPS));
-            URI uri = this.service.getHost().getSecureUri();
-            this.swagger.setHost(uri.getHost() + ":" + uri.getPort());
-        } else {
-            this.swagger.setSchemes(Collections.singletonList(Scheme.HTTP));
-            URI uri = this.service.getHost().getPublicUri();
-            this.swagger.setHost(uri.getHost() + ":" + uri.getPort());
-        }
+        this.swagger.setHost(get.getRequestHeader(Operation.HOST_HEADER));
 
         this.swagger.setSchemes(new ArrayList<>());
 
@@ -261,8 +257,10 @@ class SwaggerAssembler {
                 && q.documentDescription.serviceRequestRoutes != null
                 && !q.documentDescription.serviceRequestRoutes.isEmpty()) {
             updateCurrentTag(this.currentTag, q.documentDescription);
-            this.swagger
-                    .path(uri, pathByRoutes(q.documentDescription.serviceRequestRoutes.values()));
+            Map<String, Path> map = pathByRoutes(q.documentDescription.serviceRequestRoutes.values());
+            for (Entry<String, Path> entry : map.entrySet()) {
+                this.swagger.path(uri + entry.getKey(), entry.getValue());
+            }
 
             this.swagger.addTag(this.currentTag);
         }
@@ -537,15 +535,47 @@ class SwaggerAssembler {
         if (routeParam.type == null) {
             return response;
         }
+        setResponseType(response, routeParam.type);
+        return response;
+    }
+
+    private void setResponseType(Response response, String type) {
         try {
-            Class<?> clazz = Class.forName(routeParam.type);
-            if (clazz != Void.class) {
+            Class<?> clazz;
+            switch (type) {
+            case "int":
+            case "long":
+            case "short":
+            case "byte":
+            case "double":
+            case "float":
+                clazz = Double.class;
+                break;
+            case "char":
+                clazz = Character.class;
+                break;
+            case "boolean":
+                clazz = Boolean.class;
+                break;
+            default:
+                clazz = Class.forName(type);
+            }
+
+            if (clazz == Object.class || clazz == JsonObject.class) {
+                // a generic JSON
+                response.setSchema(new ObjectProperty());
+            } else if (Number.class.isAssignableFrom(clazz)) {
+                response.setSchema(new DoubleProperty());
+            } else if (clazz == Boolean.class) {
+                response.setSchema(new BooleanProperty());
+            } else if (clazz == String.class || clazz == Character.class) {
+                response.setSchema(new StringProperty());
+            } else if (clazz != Void.class) {
                 response.setSchema(refProperty(modelForPodo(clazz)));
             }
         } catch (ClassNotFoundException ex) {
             Logger.getLogger(SwaggerAssembler.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return response;
     }
 
     private ModelImpl modelForPodo(Class<?> type) {
@@ -651,7 +681,8 @@ class SwaggerAssembler {
         if (doc.documentDescription != null
                 && doc.documentDescription.serviceRequestRoutes != null
                 && !doc.documentDescription.serviceRequestRoutes.isEmpty()) {
-            Path pathByRoutes = pathByRoutes(doc.documentDescription.serviceRequestRoutes.values());
+            Map<String, Path> all = pathByRoutes(doc.documentDescription.serviceRequestRoutes.values());
+            Path pathByRoutes = all.values().iterator().next();
             path.setGet(pathByRoutes.getGet());
             path.setPost(pathByRoutes.getPost());
             path.setPut(pathByRoutes.getPut());
@@ -676,11 +707,21 @@ class SwaggerAssembler {
         return path;
     }
 
-    private Path pathByRoutes(Collection<List<Route>> serviceRoutes) {
-        Path path = new Path();
+    private Map<String, Path> pathByRoutes(Collection<List<Route>> serviceRoutes) {
+        Map<String, Path> res = new HashMap<>();
 
         for (List<Route> routes : serviceRoutes) {
             for (Route route : routes) {
+                String key = route.path;
+                if (key == null) {
+                    key = "";
+                }
+                Path path = res.get(key);
+                if (path == null) {
+                    path = new Path();
+                    res.put(key, path);
+                }
+
                 if (route.supportLevel != null && route.supportLevel.compareTo(this.supportLevel) < 0) {
                     // skip this route, it's below the documentation threshold for supported levels
                     continue;
@@ -705,10 +746,13 @@ class SwaggerAssembler {
                 if (route.parameters != null && !route.parameters.isEmpty()) {
                     // From the parameters list split body / query parameters
                     List<RequestRouter.Parameter> bodyParams = new ArrayList<>();
-                    route.parameters.stream().forEach((p) -> {
+                    route.parameters.forEach((p) -> {
                         switch (p.paramDef) {
                         case BODY:
                             bodyParams.add(p);
+                            break;
+                        case PATH:
+                            swaggerParams.add(paramPath(p));
                             break;
                         case QUERY:
                             swaggerParams.add(paramQuery(p, route));
@@ -726,6 +770,11 @@ class SwaggerAssembler {
                             break;
                         }
                     });
+
+                    if (bodyParams.isEmpty() && route.requestType != null) {
+                        swaggerParams.add(paramBody(route.requestType));
+                    }
+
                     // This is to handle the use case of having multiple values in the body for a
                     // given operation.
                     if (!bodyParams.isEmpty()) {
@@ -734,6 +783,7 @@ class SwaggerAssembler {
                 } else if (route.requestType != null) {
                     swaggerParams.add(paramBody(route.requestType));
                 }
+
                 if (!swaggerParams.isEmpty()) {
                     op.setParameters(swaggerParams);
                 }
@@ -778,7 +828,18 @@ class SwaggerAssembler {
                 }
             }
         }
-        return path;
+        return res;
+    }
+
+    private Parameter paramPath(RequestRouter.Parameter routeParam) {
+        PathParameter pathParam = new PathParameter();
+        pathParam.setName(routeParam.name);
+        pathParam.setDescription(routeParam.description);
+        pathParam.setRequired(routeParam.required);
+        // Setting the type to be lowercase so that we match the swagger type.
+        pathParam.setType(routeParam.type != null ? routeParam.type.toLowerCase() : "");
+        pathParam.setDefaultValue(routeParam.value);
+        return pathParam;
     }
 
     private io.swagger.models.Operation getSwaggerOperation(io.swagger.models.Operation sourceOp,

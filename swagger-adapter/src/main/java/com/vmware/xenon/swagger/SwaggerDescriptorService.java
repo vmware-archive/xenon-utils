@@ -95,9 +95,8 @@ public class SwaggerDescriptorService extends StatelessService {
 
     @Override
     public void handleStart(Operation start) {
-        logInfo("Swagger UI available at: %s", getHost().getPublicUri()
-                + ServiceUriPaths.SWAGGER
-                + ServiceHost.SERVICE_URI_SUFFIX_UI);
+        logInfo("Swagger UI available at: %s", getHost().getUri()
+                + getSelfLink() + ServiceHost.SERVICE_URI_SUFFIX_UI);
         start.complete();
     }
 

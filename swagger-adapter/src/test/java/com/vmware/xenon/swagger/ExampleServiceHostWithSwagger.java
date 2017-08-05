@@ -78,6 +78,9 @@ public class ExampleServiceHostWithSwagger extends ServiceHost {
         this.startService(Operation.createPost(UriUtils.buildUri(this, TokenService.class)),
                 new TokenService());
 
+        this.startService(Operation.createPost(UriUtils.buildUri(this, NsOwnerService.class)),
+                new NsOwnerService());
+
         return this;
     }
 }

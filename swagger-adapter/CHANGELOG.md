@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 0.0.8-SNAPSHOT
+
+
 ## 0.0.7
 * Fix for swagger-adapter deployed in a host with enabled
   authentication.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015 VMware, Inc. All Rights Reserved.
+ * Copyright (c) 2014-2017 VMware, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy of
@@ -13,95 +13,44 @@
 
 package com.vmware.xenon.distributedtracing;
 
-import java.util.UUID;
-
-import junit.framework.TestCase;
-
-import org.junit.After;
+import io.opentracing.mock.MockTracer;
+import io.opentracing.util.ThreadLocalActiveSpanSource;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.rules.ExternalResource;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.junit.Assert.*;
 
-public class DTracerTest extends TestCase {
+public class DTracerTest {
 
-    private TestTracingHost launchService(TemporaryFolder tmpFolder) throws Throwable {
-        TestTracingHost h = new TestTracingHost();
-        String bindAddress = "127.0.0.1";
-        String hostId = UUID.randomUUID().toString();
-        String[] args = {
-                "--port=0",
-                "--sandbox=" + tmpFolder.getRoot().getAbsolutePath(),
-                "--bindAddress=" + bindAddress,
-                "--id=" + hostId
-        };
-        h.initialize(args);
-        h.start();
-        return h;
+    private MockTracer injectTracer() {
+        MockTracer tracer = new MockTracer(new ThreadLocalActiveSpanSource());
+        DTracer.setTracer(tracer);
+        return tracer;
     }
 
     @Test
-    public void testNoSystemProperties() throws Throwable {
+    public void testNoConfigNoOpInstance() throws Throwable {
         System.setProperty("tracer.appName", "");
+        System.setProperty("tracer.implementation", "");
         System.setProperty("tracer.sampleRate", "");
         System.setProperty("tracer.zipkinUrl", "");
-        TemporaryFolder tmpFolder = new TemporaryFolder();
-        tmpFolder.create();
-        TestTracingHost h = null;
-        try {
-            h = launchService(tmpFolder);
-            assertTrue(h.getTracer().getServiceTracer().getClosableSpans().size() == 0);
-            assertTrue(h.getTracer().getServiceTracer().getOpenedSpans().size() == 0);
-        } finally {
-            assertNotNull(h);
-            h.stop();
-            tmpFolder.delete();
-        }
-
+        DTracer.clearTracers();
+        // Its not enough to just request a tracer, we need to know that tracing without configuration does work.
+        Helpers.runHost();
+        assertThat(DTracer.getTracer(), instanceOf(io.opentracing.NoopTracer.class));
     }
 
     @Test
-    public void testSystemProperties() throws Throwable {
-        System.setProperty("tracer.appName", "tracerhost1");
-        System.setProperty("tracer.sampleRate", "1");
-        System.setProperty("tracer.zipkinUrl", "http://zipkinUrl");
-        TemporaryFolder tmpFolder = new TemporaryFolder();
-        tmpFolder.create();
-        TestTracingHost h = null;
-        try {
-            h = launchService(tmpFolder);
-            assertTrue(h.getTracer().getServiceTracer().getClosableSpans().size() == 0);
-            assertTrue(h.getTracer().getServiceTracer().getOpenedSpans().size() == 0);
-        } finally {
-            assertNotNull(h);
-            h.stop();
-            tmpFolder.delete();
-        }
-
+    public void testTracingHostStartupWorks() throws Throwable {
+        System.setProperty("tracer.appName", "testservice");
+        MockTracer tracer = injectTracer();
+        Helpers.runHost();
+        assertEquals(4, tracer.finishedSpans().size());
     }
 
-    @Test
-    public void testSystemPropertiesZeroSampling() throws Throwable {
-        System.setProperty("tracer.appName", "tracerhost2");
-        System.setProperty("tracer.sampleRate", "0");
-        System.setProperty("tracer.zipkinUrl", "http://zipkinUrl");
-        TemporaryFolder tmpFolder = new TemporaryFolder();
-        tmpFolder.create();
-        TestTracingHost h = null;
-        try {
-            h = launchService(tmpFolder);
-            assertTrue(h.getTracer().getServiceTracer().getClosableSpans().size() == 0);
-            assertTrue(h.getTracer().getServiceTracer().getOpenedSpans().size() == 0);
-        } finally {
-            assertNotNull(h);
-            h.stop();
-            tmpFolder.delete();
-        }
 
-    }
+    @Rule
+    public ExternalResource isolateConfig = new IsolateConfig();
 
-    @After
-    public void clearSystemProperties() {
-        System.clearProperty("tracer.appName");
-        System.clearProperty("tracer.sampleRate");
-        System.clearProperty("tracer.zipkinUrl");
-    }
 }

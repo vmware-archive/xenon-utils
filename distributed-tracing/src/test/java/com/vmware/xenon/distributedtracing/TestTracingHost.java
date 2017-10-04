@@ -15,21 +15,25 @@ package com.vmware.xenon.distributedtracing;
 
 import java.util.logging.Level;
 
-import com.github.kristofa.brave.SpanId;
-
 import com.vmware.xenon.common.Service.ServiceOption;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.services.common.ExampleService;
 import com.vmware.xenon.services.common.ExampleTaskService;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.RootNamespaceService;
+import io.opentracing.ActiveSpan;
+import io.opentracing.Tracer;
 
 /**
  * Our entry point, spawning a host that run/showcase examples we can play with.
  */
 public class TestTracingHost extends ServiceHost {
 
-    private DTracer tracer = DTracer.getTracer();
+    private Tracer tracer;
+
+    public TestTracingHost() throws Throwable {
+        this.tracer = DTracer.getTracer();
+    }
 
     public static void main(String[] args) throws Throwable {
         TestTracingHost h = new TestTracingHost();
@@ -46,39 +50,35 @@ public class TestTracingHost extends ServiceHost {
         }));
     }
 
-    public DTracer getTracer() {
+    public Tracer getTracer() {
         return this.tracer;
     }
 
     @Override
     public ServiceHost start() throws Throwable {
-        SpanId spanId = this.tracer.startLocalSpan(this.getClass().getName(), "start");
-        super.start();
+        // Trace the startup process
+        try (ActiveSpan activeSpan = this.tracer.buildSpan("ServiceHost.start").startActive()) {
+            super.start();
 
-        // Start core services, must be done once
-        SpanId nestedSpanId = this.tracer
-                .startLocalSpan(this.getClass().getName(), "startDefaultCore");
+        // Start core services, must be done once - note that this traces internally
         startDefaultCoreServicesSynchronously();
-
         // Start the root namespace service: this will list all available factory services for
         // queries to the root (/)
-        super.startService(new RootNamespaceService());
-        this.tracer.endLocalSpan(nestedSpanId);
-
-        SpanId exampleSpanId = this.tracer
-                .startLocalSpan(this.getClass().getName(), "startExampleServices");
-        // Start example tutorial services
-        super.startFactory(new ExampleService());
-        super.startFactory(new ExampleTaskService());
-        this.tracer.endLocalSpan(exampleSpanId);
-        this.tracer.endLocalSpan(spanId);
+            try (ActiveSpan nsSpan = this.tracer.buildSpan("startNamespace").startActive()) {
+                super.startService(new RootNamespaceService());
+            }
+            try (ActiveSpan exampleSpan = this.tracer.buildSpan("startExampleServices").startActive()) {
+                // Start example tutorial services
+                super.startFactory(new ExampleService());
+                super.startFactory(new ExampleTaskService());
+            }
+        }
         return this;
     }
 
     @Override public void startDefaultCoreServicesSynchronously() throws Throwable {
-        SpanId spanId = this.tracer
-                .startLocalSpan(this.getClass().getName(), "startDefaultCoreServicesSynchronously");
-        super.startDefaultCoreServicesSynchronously();
-        this.tracer.endLocalSpan(spanId);
+        try (ActiveSpan coreSpan = this.tracer.buildSpan("startDefaultCore").startActive()) {
+            super.startDefaultCoreServicesSynchronously();
+        }
     }
 }

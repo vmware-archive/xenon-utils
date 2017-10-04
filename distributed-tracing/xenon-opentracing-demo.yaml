@@ -1,0 +1,27 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: xenon-opentracing-demo
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: xenon-opentracing-demo
+    spec:
+      containers:
+      - image: xenon-utils/xenon-opentracing-demo
+        name: xenon-opentracing-demo
+        # This connects to a Jaeger instance on the minion; instead you can add a sidecar container and remove this
+        env:
+        - name: JAEGER_AGENT_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        ports:
+        - containerPort: 8000
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: "/"
+            port: 8000

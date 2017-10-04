@@ -28,9 +28,9 @@ import com.google.common.base.CaseFormat;
 import com.twitter.zipkin.gen.Endpoint;
 
 /**
- * This will read and configure the Zipkin settings - zipkin url, sampling rate & app/stack name.
- * The values for these settings will be read from java system properties - tracer.appName,
- * tracer.sampleRate & tracer.zipkinUrl. If those are not available then it will be read from
+ * This will read and configure the Zipkin settings - zipkin url (e.g. http://HOST/api/v1/spans,
+ * sampling rate & app/stack name. The values for these settings will be read from java system properties
+ * - tracer.appName, tracer.sampleRate & tracer.zipkinUrl. If those are not available then it will be read from
  * environment variables - TRACER_APP_NAME, TRACER_SAMPLE_RATE & TRACER_ZIPKIN_URL. In case, even
  * those are also, not available, then a No-Op DTracer will be returned.
  */
@@ -62,6 +62,11 @@ public class ZipkinConfig {
         return readParameter(PARAM_TRACER_ZIPKIN_URL);
     }
 
+    /**
+     * Read a system property or an environment variable. System properties take precedence.
+     * @param varName The property to read.
+     * @return The resulting property.
+     */
     private static String readParameter(String varName) {
         String varValue = System.getProperty(varName);
         if (varValue == null || varValue.isEmpty() || varValue
@@ -80,18 +85,11 @@ public class ZipkinConfig {
             appName = DEFAULT_APP_NAME;
         }
 
-        String hostName = "";
-        try {
-            hostName = InetAddress.getLocalHost().getHostName();
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
-
         if (stackName == null || stackName.isEmpty() || stackName
                 .equalsIgnoreCase("null")) {
-            return appName + "-" + hostName;
+            return appName;
         }
-        return appName + "-" + stackName + "-" + hostName;
+        return appName + "-" + stackName;
     }
 
     public static Brave getBraveInstance(String tracerName) {

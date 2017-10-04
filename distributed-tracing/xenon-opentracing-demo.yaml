@@ -1,0 +1,28 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: xenon-opentracing-demo
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: xenon-opentracing-demo
+    spec:
+      containers:
+      - image: symphony-docker-local.jfrog.io/robertc/xenon-opentracing-demo:2
+        name: xenon-opentracing-demo
+        env:
+        - name: JAEGER_AGENT_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        ports:
+        - containerPort: 8000
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: "/"
+            port: 8000
+      imagePullSecrets:
+      - name: "registrysecret"

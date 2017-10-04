@@ -13,26 +13,19 @@
 
 package com.vmware.xenon.distributedtracing;
 
-import static org.junit.Assert.assertEquals;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
 
-import com.vmware.xenon.common.ServiceHost;
-import com.vmware.xenon.common.opentracing.TracerFactory;
-import io.opentracing.Tracer;
-import io.opentracing.mock.MockTracer;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExternalResource;
+public class TestStatefulService extends StatefulService {
+    public static final String FACTORY_LINK = "/stateful";
 
-public class DTracerTest {
-
-    @Test
-    public void testTracingHostStartupWorks() throws Throwable {
-        MockTracer tracer = Helpers.injectTracer();
-        Helpers.runHost();
-        assertEquals(21, tracer.finishedSpans().size());
+    public static class State extends ServiceDocument {
+        public String name;
     }
 
-    @Rule
-    public ExternalResource isolateConfig = new IsolateConfig();
+    public TestStatefulService() {
+        super(State.class);
+    }
+
 
 }

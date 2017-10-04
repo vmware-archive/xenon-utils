@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 VMware, Inc. All Rights Reserved.
+ * Copyright (c) 2016-2017 VMware, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy of
@@ -13,110 +13,64 @@
 
 package com.vmware.xenon.distributedtracing.zipkin;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.logging.Logger;
 
-import com.github.kristofa.brave.BoundarySampler;
-import com.github.kristofa.brave.Brave;
-import com.github.kristofa.brave.EmptySpanCollectorMetricsHandler;
-import com.github.kristofa.brave.InheritableServerClientAndLocalSpanState;
-import com.github.kristofa.brave.LoggingSpanCollector;
-import com.github.kristofa.brave.SpanCollector;
-import com.github.kristofa.brave.http.HttpSpanCollector;
-import com.google.common.base.CaseFormat;
-import com.twitter.zipkin.gen.Endpoint;
+import brave.Tracing;
+import brave.opentracing.BraveTracer;
+import brave.sampler.BoundarySampler;
+import io.opentracing.Tracer;
+import zipkin2.codec.SpanBytesEncoder;
+import zipkin2.reporter.AsyncReporter;
+import zipkin2.reporter.Reporter;
+import zipkin2.reporter.Sender;
+import zipkin2.reporter.okhttp3.OkHttpSender;
+import zipkin2.reporter.urlconnection.URLConnectionSender;
 
+import com.vmware.xenon.distributedtracing.DTracer;
 /**
- * This will read and configure the Zipkin settings - zipkin url, sampling rate & app/stack name.
- * The values for these settings will be read from java system properties - tracer.appName,
- * tracer.sampleRate & tracer.zipkinUrl. If those are not available then it will be read from
- * environment variables - TRACER_APP_NAME, TRACER_SAMPLE_RATE & TRACER_ZIPKIN_URL. In case, even
- * those are also, not available, then a No-Op DTracer will be returned.
+ * This will read and configure the Zipkin specific settings.
+ * - zipkin url (e.g. http://HOST/api/v1/spans).
+ * There is no default, and if zipkin has been chosen it must be supplied either in the tracer.zipkinUrl JVM property,
+ * or the TRACER_ZIPKINURL environment variable.
  */
 public class ZipkinConfig {
 
     private static final Logger LOG = Logger.getLogger(ZipkinConfig.class.getName());
-    private static final String PARAM_TRACER_APP_NAME = "tracer.appName";
-    private static final String PARAM_TRACER_SAMPLE_RATE = "tracer.sampleRate";
     private static final String PARAM_TRACER_ZIPKIN_URL = "tracer.zipkinUrl";
-    private static final String DEFAULT_APP_NAME = "service";
-    private static final float DEFAULT_SAMPLE_RATE = 1.0f;
-
-    private static float getSampleRate() {
-        float sampleRate;
-        String sampleRateStr = readParameter(PARAM_TRACER_SAMPLE_RATE);
-        if (sampleRateStr == null) {
-            sampleRate = DEFAULT_SAMPLE_RATE;
-        } else {
-            try {
-                sampleRate = Float.parseFloat(sampleRateStr);
-            } catch (NumberFormatException nfe) {
-                sampleRate = DEFAULT_SAMPLE_RATE;
-            }
-        }
-        return sampleRate;
-    }
 
     private static String getZipkinUrl() {
-        return readParameter(PARAM_TRACER_ZIPKIN_URL);
+        return DTracer.readParameter(PARAM_TRACER_ZIPKIN_URL);
     }
 
-    private static String readParameter(String varName) {
-        String varValue = System.getProperty(varName);
-        if (varValue == null || varValue.isEmpty() || varValue
-                .equalsIgnoreCase("null")) {
-            String envVarName = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, varName);
-            envVarName = envVarName.replaceAll("\\.", "_");
-            varValue = System.getenv(envVarName);
-        }
-        return varValue;
-    }
-
-    public static String getTracerName(String stackName) {
-        String appName = readParameter(PARAM_TRACER_APP_NAME);
-
-        if (appName == null) {
-            appName = DEFAULT_APP_NAME;
-        }
-
-        String hostName = "";
-        try {
-            hostName = InetAddress.getLocalHost().getHostName();
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
-
-        if (stackName == null || stackName.isEmpty() || stackName
-                .equalsIgnoreCase("null")) {
-            return appName + "-" + hostName;
-        }
-        return appName + "-" + stackName + "-" + hostName;
-    }
-
-    public static Brave getBraveInstance(String tracerName) {
-        InheritableServerClientAndLocalSpanState state = new InheritableServerClientAndLocalSpanState(
-                Endpoint.create(tracerName, 0));
-        Brave.Builder builder = new Brave.Builder(state);
-
+    public static Tracer getOpenTracingInstance(String stackName) throws Exception {
         String zipkinUrl = getZipkinUrl();
-        SpanCollector spanCollector = null;
-        float rate = getSampleRate();
-        if (zipkinUrl == null) {
-            spanCollector = new LoggingSpanCollector();
-            rate = 0;
-            LOG.info(String.format("Initialized DTracer: [%s] as a Logger which wont sample",
-                    tracerName));
-        } else {
-            spanCollector = HttpSpanCollector.create(zipkinUrl,
-                    new EmptySpanCollectorMetricsHandler());
-            LOG.info(String.format(
-                    "Initialized DTracer: [%s] which will submit traces to [%s] and will sample at rate: [%s]",
-                    tracerName, zipkinUrl, rate));
+        if (zipkinUrl == null || zipkinUrl.isEmpty()) {
+            throw new DTracer.InvalidConfigException("Zipkin tracing requires a Zipkin URL.");
         }
-        builder.spanCollector(spanCollector)
-                .traceSampler(BoundarySampler.create(rate));
-        return builder.build();
+        String tracerName = DTracer.getTracerName(stackName);
+        Number rate = DTracer.getSampleRate();
+        if (rate == null) {
+            rate = DTracer.DEFAULT_SAMPLE_RATE;
+        }
+        Sender sender = null;
+        Reporter spanReporter = null;
+        if (zipkinUrl.contains("/v1/")) {
+            sender = URLConnectionSender.create(zipkinUrl);
+            spanReporter = AsyncReporter.builder(sender)
+                .build(SpanBytesEncoder.JSON_V1);
+        } else {
+            sender = OkHttpSender.create(zipkinUrl);
+            spanReporter = AsyncReporter.create(sender);
+        }
+        Tracing braveTracing = Tracing.newBuilder()
+                .localServiceName(tracerName)
+                .spanReporter(spanReporter)
+                .sampler(BoundarySampler.create((float)rate))
+                .build();
+        LOG.info(String.format(
+                "Initialized DTracer: [%s] which will submit traces to [%s] and will sample at rate: [%s]",
+                tracerName, zipkinUrl, rate));
+        return BraveTracer.create(braveTracing);
     }
 
 }

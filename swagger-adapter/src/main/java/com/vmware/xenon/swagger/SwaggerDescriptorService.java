@@ -14,8 +14,10 @@
 package com.vmware.xenon.swagger;
 
 import java.util.EnumSet;
+import java.util.function.Consumer;
 
 import io.swagger.models.Info;
+import io.swagger.models.Swagger;
 
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.RequestRouter.Route.SupportLevel;
@@ -40,6 +42,8 @@ public class SwaggerDescriptorService extends StatelessService {
     // default to document only APIs annotated with PUBLIC
     private SupportLevel supportLevel = SupportLevel.PUBLIC;
 
+    private Consumer<Swagger> swaggerPostprocessor;
+
     public SwaggerDescriptorService() {
         super(ServiceDocument.class);
         toggleOption(ServiceOption.HTML_USER_INTERFACE, true);
@@ -53,6 +57,18 @@ public class SwaggerDescriptorService extends StatelessService {
      */
     public void setExcludedPrefixes(String... excludedPrefixes) {
         this.excludedPrefixes = excludedPrefixes;
+    }
+
+    /**
+     * A hook to postprocess swagger after the framework has produced a final API descriptor.
+     * Intended to be used in cases where complex customizations are easier to express in an
+     * imperative style, for example skip a DELETE operation only on a single service etc.
+     *
+     * The postprocessor in invoked every time a Swagger instance is built from the the current host.
+     * @param swaggerPostprocessor
+     */
+    public void setSwaggerPostprocessor(Consumer<Swagger> swaggerPostprocessor) {
+        this.swaggerPostprocessor = swaggerPostprocessor;
     }
 
     /**
@@ -110,6 +126,7 @@ public class SwaggerDescriptorService extends StatelessService {
                     .setStripPackagePrefixes(this.stripPackagePrefixes)
                     .setSupportLevel(this.supportLevel)
                     .setInfo(this.info)
+                    .setPostprocessor(this.swaggerPostprocessor)
                     .setExcludeUtilities(this.excludeUtilities)
                     .setQueryResult(o.getBody(ServiceDocumentQueryResult.class))
                     .build(get);

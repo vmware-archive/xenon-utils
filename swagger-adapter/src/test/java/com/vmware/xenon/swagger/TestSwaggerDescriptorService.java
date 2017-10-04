@@ -72,6 +72,8 @@ public class TestSwaggerDescriptorService {
         info.setTitle("title");
         info.setVersion("version");
 
+        swagger.setSwaggerPostprocessor( s -> s.getInfo().setVersion("postprocessed"));
+
         swagger.setInfo(info);
         swagger.setExcludedPrefixes("/core/authz/");
 
@@ -223,6 +225,8 @@ public class TestSwaggerDescriptorService {
 
     private void assertSwagger(Swagger swagger) {
         assertEquals("/", swagger.getBasePath());
+
+        assertEquals("postprocessed", swagger.getInfo().getVersion());
 
         assertEquals(INFO_DESCRIPTION, swagger.getInfo().getDescription());
         assertEquals(INFO_TERMS_OF_SERVICE, swagger.getInfo().getTermsOfService());

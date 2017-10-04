@@ -29,6 +29,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -103,6 +104,7 @@ class SwaggerAssembler {
     private Set<String> excludedPrefixes;
     private boolean excludeUtilities;
     private SupportLevel supportLevel = SupportLevel.DEPRECATED;
+    private Consumer<Swagger> postprocessor;
 
     private SwaggerAssembler(Service service) {
         this.service = service;
@@ -229,6 +231,10 @@ class SwaggerAssembler {
                 this.get.addResponseHeader(Operation.CONTENT_TYPE_HEADER,
                         Operation.MEDIA_TYPE_APPLICATION_JSON);
                 writer = Json.pretty();
+            }
+
+            if (this.postprocessor != null) {
+                this.postprocessor.accept(this.swagger);
             }
 
             this.get.setBody(writer.writeValueAsString(this.swagger));
@@ -870,12 +876,12 @@ class SwaggerAssembler {
     }
 
     private static final String[][] FACTORY_QUERY_PARAMS = new String[][]{
-        /* Array of factory query documentation, each row contains queryParam, description, type, example, default */
-//        new String[]{UriUtils.URI_PARAM_ODATA_EXPAND_NO_DOLLAR_SIGN, "Expand document contents", BooleanProperty.TYPE, null, "false"},
+        new String[]{UriUtils.URI_PARAM_ODATA_EXPAND, "Expand document contents", BooleanProperty.TYPE, null, "false"},
         new String[]{UriUtils.URI_PARAM_ODATA_FILTER, "OData filter expression", StringProperty.TYPE, null, null},
         new String[]{UriUtils.URI_PARAM_ODATA_SELECT, "Comma-separated list of fields to populate in query result", StringProperty.TYPE, null, null},
         new String[]{UriUtils.URI_PARAM_ODATA_LIMIT, "Set maximum number of documents to return in this query", IntegerProperty.TYPE, "10", null},
-        new String[]{UriUtils.URI_PARAM_ODATA_TENANTLINKS, "Comma-separated list", StringProperty.TYPE, null, null}, // below are not yet implemented in runtime
+        new String[]{UriUtils.URI_PARAM_ODATA_TENANTLINKS, "Comma-separated list", StringProperty.TYPE, null, null},
+    // below are not yet implemented in runtime
     //        new String[] { UriUtils.URI_PARAM_ODATA_SKIP, "Expand document contents", BooleanProperty.TYPE, null },
     //        new String[] { UriUtils.URI_PARAM_ODATA_ORDER_BY, "Sort respondses", StringProperty.TYPE, null },
     //        new String[] { UriUtils.URI_PARAM_ODATA_TOP, "Expand document contents", StringProperty.TYPE, null },
@@ -916,6 +922,11 @@ class SwaggerAssembler {
 
     public SwaggerAssembler setExcludeUtilities(boolean excludeUtilities) {
         this.excludeUtilities = excludeUtilities;
+        return this;
+    }
+
+    public SwaggerAssembler setPostprocessor(Consumer<Swagger> postprocessor) {
+        this.postprocessor = postprocessor;
         return this;
     }
 }

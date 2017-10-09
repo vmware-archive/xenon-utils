@@ -16,14 +16,18 @@ package com.vmware.xenon.distributedtracing;
 import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import static org.junit.Assert.assertNotNull;
 
+import io.opentracing.mock.MockTracer;
+import io.opentracing.util.ThreadLocalActiveSpanSource;
 import org.junit.rules.TemporaryFolder;
 
 public class Helpers {
 
-    public static void runHost() throws Throwable {
+
+    public static void runHost(Consumer<TestTracingHost> consumer) throws Throwable {
         TestTracingHost h = new TestTracingHost();
         String bindAddress = "127.0.0.1";
         String hostId = UUID.randomUUID().toString();
@@ -37,11 +41,26 @@ public class Helpers {
             try {
                 h.initialize(args);
                 h.start();
+                consumer.accept(h);
             } finally {
                 assertNotNull(h);
                 h.stop();
             }
         }
+    }
+
+    public static void runHost() throws Throwable {
+        runHost((TestTracingHost serviceHost) -> { });
+    }
+
+    public static MockTracer injectTracer() {
+        MockTracer tracer = getMockTracer();
+        DTracer.setTracer(tracer);
+        return tracer;
+    }
+
+    public static MockTracer getMockTracer() {
+        return new MockTracer(new ThreadLocalActiveSpanSource(), MockTracer.Propagator.TEXT_MAP);
     }
 
     private static class CloseableFolder implements AutoCloseable {

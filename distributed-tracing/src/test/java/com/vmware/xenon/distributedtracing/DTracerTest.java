@@ -18,18 +18,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import io.opentracing.mock.MockTracer;
-import io.opentracing.util.ThreadLocalActiveSpanSource;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 
 public class DTracerTest {
-
-    private MockTracer injectTracer() {
-        MockTracer tracer = new MockTracer(new ThreadLocalActiveSpanSource());
-        DTracer.setTracer(tracer);
-        return tracer;
-    }
 
     @Test
     public void testNoConfigNoOpInstance() throws Throwable {
@@ -46,9 +39,9 @@ public class DTracerTest {
     @Test
     public void testTracingHostStartupWorks() throws Throwable {
         System.setProperty("tracer.appName", "testservice");
-        MockTracer tracer = injectTracer();
+        MockTracer tracer = Helpers.injectTracer();
         Helpers.runHost();
-        assertEquals(4, tracer.finishedSpans().size());
+        assertEquals(11, tracer.finishedSpans().size());
     }
 
 

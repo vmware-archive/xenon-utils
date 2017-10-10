@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.0.8-SNAPSHOT
+## 0.0.8
 * Richer support for URI_NAMESPACE_OWNER services. This version requires
   xenon-1.5.5 and is not compatible with earlier versions.
 

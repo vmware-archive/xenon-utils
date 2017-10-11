@@ -1,0 +1,7 @@
+Verified+1: Gerrit-Jenkins
+Code-Review+2: Tadaya Tsuyukubo <ttsuyukubo@vmware.com>
+Submitted-by: Julian Vassev <jvassev@vmware.com>
+Submitted-at: Wed, 11 Oct 2017 01:11:50 -0700
+Reviewed-on: https://review.ec.eng.vmware.com/20782
+Project: xenon-utils
+Branch: refs/heads/master

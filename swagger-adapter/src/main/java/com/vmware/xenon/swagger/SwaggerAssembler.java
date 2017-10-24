@@ -30,6 +30,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -263,7 +264,8 @@ class SwaggerAssembler {
                 && q.documentDescription.serviceRequestRoutes != null
                 && !q.documentDescription.serviceRequestRoutes.isEmpty()) {
             updateCurrentTag(this.currentTag, q.documentDescription);
-            Map<String, Path> map = pathByRoutes(q.documentDescription.serviceRequestRoutes.values());
+            Map<String, Path> map = pathByRoutes(q.documentDescription.serviceRequestRoutes.values(),
+                    Path::new);
             for (Entry<String, Path> entry : map.entrySet()) {
                 this.swagger.path(uri + entry.getKey(), entry.getValue());
             }
@@ -303,7 +305,11 @@ class SwaggerAssembler {
         }
 
         Parameter idParam = paramId();
-        this.swagger.path(uri + PREFIX_ID, path2Instance(doc));
+        String base = uri + PREFIX_ID;
+        Map<String, Path> paths = path2Instance(doc);
+        paths.forEach((suffix, path) -> {
+            this.swagger.path(base + suffix, path);
+        });
 
         if (!this.excludeUtilities) {
             this.swagger.path(uri + PREFIX_ID + ServiceHost.SERVICE_URI_SUFFIX_STATS,
@@ -679,21 +685,18 @@ class SwaggerAssembler {
         return res;
     }
 
-    private Path path2Instance(ServiceDocument doc) {
+    private Path defaultInstancePath() {
         Path path = new Path();
         path.setParameters(Collections.singletonList(paramId()));
-        path.setGet(opDefault(doc));
+        return path;
+    }
 
+    private Map<String, Path> path2Instance(ServiceDocument doc) {
         if (doc.documentDescription != null
                 && doc.documentDescription.serviceRequestRoutes != null
                 && !doc.documentDescription.serviceRequestRoutes.isEmpty()) {
-            Map<String, Path> all = pathByRoutes(doc.documentDescription.serviceRequestRoutes.values());
-            Path pathByRoutes = all.values().iterator().next();
-            path.setGet(pathByRoutes.getGet());
-            path.setPost(pathByRoutes.getPost());
-            path.setPut(pathByRoutes.getPut());
-            path.setPatch(pathByRoutes.getPatch());
-            path.setDelete(pathByRoutes.getDelete());
+            return pathByRoutes(doc.documentDescription.serviceRequestRoutes.values(),
+                    this::defaultInstancePath);
         } else {
             io.swagger.models.Operation op = new io.swagger.models.Operation();
             op.addTag(this.currentTag.getName());
@@ -704,16 +707,17 @@ class SwaggerAssembler {
 
             // service definition should be introspected to better
             // describe which actions are supported
+            Path path = this.defaultInstancePath();
+            path.setGet(opDefault(doc));
             path.setPost(op);
             path.setPut(op);
             path.setPatch(op);
             path.setDelete(op);
+            return Collections.singletonMap("", path);
         }
-
-        return path;
     }
 
-    private Map<String, Path> pathByRoutes(Collection<List<Route>> serviceRoutes) {
+    private Map<String, Path> pathByRoutes(Collection<List<Route>> serviceRoutes, Supplier<Path> pathProto) {
         Map<String, Path> res = new HashMap<>();
 
         for (List<Route> routes : serviceRoutes) {
@@ -724,7 +728,7 @@ class SwaggerAssembler {
                 }
                 Path path = res.get(key);
                 if (path == null) {
-                    path = new Path();
+                    path = pathProto.get();
                     res.put(key, path);
                 }
 

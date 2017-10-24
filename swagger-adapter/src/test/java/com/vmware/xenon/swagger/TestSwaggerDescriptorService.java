@@ -30,11 +30,13 @@ import com.google.common.collect.Ordering;
 import io.swagger.models.Info;
 import io.swagger.models.Model;
 import io.swagger.models.Path;
+import io.swagger.models.Response;
 import io.swagger.models.Swagger;
 import io.swagger.models.parameters.BodyParameter;
 import io.swagger.models.parameters.Parameter;
 import io.swagger.models.parameters.QueryParameter;
 import io.swagger.models.properties.Property;
+import io.swagger.models.properties.RefProperty;
 import io.swagger.util.Json;
 import io.swagger.util.Yaml;
 import org.hamcrest.CoreMatchers;
@@ -285,9 +287,35 @@ public class TestSwaggerDescriptorService {
         assertEquals(2, opPut.getConsumes().size());
         assertEquals(2, opPut.getProduces().size());
 
+        p = swagger.getPath("/cars/{id}?engine");
+        assertNotNull(p);
+        assertNull(p.getPost());
+        assertNull(p.getPatch());
+        assertNull(p.getPut());
+        assertNull(p.getDelete());
+
+        io.swagger.models.Operation opGet = p.getGet();
+        assertNotNull(opGet);
+        assertEquals("The car's engine", opGet.getDescription());
+        parameters = opGet.getParameters();
+        if (parameters != null) {
+            assertEquals(0, parameters.size());
+        }
+        // look for 1 (not the usual 2) response codes
+        assertNotNull(opGet.getResponses());
+        assertEquals(1, opGet.getResponses().size());
+        Response response = opGet.getResponses().get(String.valueOf(Operation.STATUS_CODE_OK));
+        assertNotNull(response);
+        Property property = response.getSchema();
+        assertTrue(String.format("Expected %s, but was %s", RefProperty.class.getSimpleName(),
+                property.getClass().getSimpleName()),  property instanceof RefProperty);
+        assertEquals("com:vmware:xenon:swagger:CarService:EngineInfo", ((RefProperty) property).getSimpleRef());
+        // check consumes + produces
+        assertEquals(1, opGet.getProduces().size());
+
         p = swagger.getPath("/tokens");
         assertNotNull(p);
-        io.swagger.models.Operation opGet = p.getGet();
+        opGet = p.getGet();
         assertNotNull(opGet);
         assertEquals("Custom Token Service", opGet.getTags().get(0));
         assertEquals("Short version / Long version", opGet.getDescription());

@@ -42,6 +42,31 @@ public class CarService extends StatefulService {
         return FactoryService.create(CarService.class, Car.class);
     }
 
+    @RouteDocumentation(description = "@CAR_ENGINE",
+            path = "?engine",
+            produces = { "application/json" },
+            responses = {
+                @ApiResponse(statusCode = Operation.STATUS_CODE_OK, description = "OK", response = EngineInfo.class)
+            })
+    @RouteDocumentation(description = "@CAR",
+            produces = { "application/json" },
+            responses = {
+                @ApiResponse(statusCode = Operation.STATUS_CODE_OK, description = "OK", response = Car.class),
+                @ApiResponse(statusCode = Operation.STATUS_CODE_NOT_FOUND, description = "Not Found"),
+            })
+    @Override
+    public void handleGet(Operation get) {
+        Map<String,String> queryParams = UriUtils.parseUriQueryParams(get.getUri());
+        boolean engineInfo = Boolean.parseBoolean(queryParams.get("engine"));
+        if (engineInfo) {
+            Car car = this.getState(get);
+            get.setBody(car.engineInfo);
+            get.complete();
+        } else {
+            super.handleGet(get);
+        }
+    }
+
     @RouteDocumentation(description = "@CAR",
             queryParams = {
                 @QueryParam(description = "@TEAPOT",

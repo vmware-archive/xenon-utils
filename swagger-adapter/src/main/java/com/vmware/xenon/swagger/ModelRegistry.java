@@ -32,6 +32,7 @@ import io.swagger.models.properties.DateTimeProperty;
 import io.swagger.models.properties.DoubleProperty;
 import io.swagger.models.properties.LongProperty;
 import io.swagger.models.properties.MapProperty;
+import io.swagger.models.properties.ObjectProperty;
 import io.swagger.models.properties.Property;
 import io.swagger.models.properties.RefProperty;
 import io.swagger.models.properties.StringProperty;
@@ -141,7 +142,7 @@ class ModelRegistry {
         case LONG:
             return new LongProperty();
         case MAP:
-            return new MapProperty(new StringProperty());
+            return new MapProperty(new ObjectProperty());
         case PODO:
             return refProperty(pd);
         case STRING:

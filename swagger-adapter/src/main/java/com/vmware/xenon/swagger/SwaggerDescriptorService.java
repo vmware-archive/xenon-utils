@@ -13,11 +13,17 @@
 
 package com.vmware.xenon.swagger;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import io.swagger.models.Info;
+import io.swagger.models.Scheme;
+import io.swagger.models.SecurityRequirement;
 import io.swagger.models.Swagger;
+import io.swagger.models.auth.SecuritySchemeDefinition;
 
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.RequestRouter.Route.SupportLevel;
@@ -36,8 +42,12 @@ public class SwaggerDescriptorService extends StatelessService {
 
     private Info info;
     private String[] excludedPrefixes = new String[] { "/core/" };
+    private String[] includedPrefixes = null;
     private String[] stripPackagePrefixes = new String[] { };
     private boolean excludeUtilities;
+    private Map<String, SecuritySchemeDefinition> securityDefinitions;
+    private List<SecurityRequirement> security;
+    private List<Scheme> schemes = new ArrayList<Scheme>();
 
     // default to document only APIs annotated with PUBLIC
     private SupportLevel supportLevel = SupportLevel.PUBLIC;
@@ -57,6 +67,15 @@ public class SwaggerDescriptorService extends StatelessService {
      */
     public void setExcludedPrefixes(String... excludedPrefixes) {
         this.excludedPrefixes = excludedPrefixes;
+    }
+
+    /**
+     * Include only services whose URIs start with any of the given prefixes.
+     *
+     * @param includedPrefixes
+     */
+    public void setIncludedPrefixes(String... includedPrefixes) {
+        this.includedPrefixes = includedPrefixes;
     }
 
     /**
@@ -109,6 +128,30 @@ public class SwaggerDescriptorService extends StatelessService {
         this.supportLevel = supportLevel;
     }
 
+    /**
+     * Set the security definitions in the swagger description.
+     * @param securityDefinitions
+     */
+    public void setSecurityDefinitions(Map<String, SecuritySchemeDefinition> securityDefinitions) {
+        this.securityDefinitions = securityDefinitions;
+    }
+
+    /**
+     * Set the default security for all operations in the swagger description.
+     * @param security
+     */
+    public void setSecurity(List<SecurityRequirement> security) {
+        this.security = security;
+    }
+
+    /**
+     * Set the api schemes (ex. https) in the swagger description.
+     * @param schemes
+     */
+    public void setSchemes(List<Scheme> schemes) {
+        this.schemes = schemes;
+    }
+
     @Override
     public void handleStart(Operation start) {
         logInfo("Swagger UI available at: %s", getHost().getUri()
@@ -123,11 +166,15 @@ public class SwaggerDescriptorService extends StatelessService {
             SwaggerAssembler
                     .create(this)
                     .setExcludedPrefixes(this.excludedPrefixes)
+                    .setIncludedPrefixes(this.includedPrefixes)
                     .setStripPackagePrefixes(this.stripPackagePrefixes)
                     .setSupportLevel(this.supportLevel)
                     .setInfo(this.info)
                     .setPostprocessor(this.swaggerPostprocessor)
                     .setExcludeUtilities(this.excludeUtilities)
+                    .setSecurityDefinitions(this.securityDefinitions)
+                    .setSecurity(this.security)
+                    .setSchemes(this.schemes)
                     .setQueryResult(o.getBody(ServiceDocumentQueryResult.class))
                     .build(get);
         });

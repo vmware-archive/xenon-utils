@@ -43,12 +43,16 @@ import io.swagger.models.ModelImpl;
 import io.swagger.models.Path;
 import io.swagger.models.RefModel;
 import io.swagger.models.Response;
+import io.swagger.models.Scheme;
+import io.swagger.models.SecurityRequirement;
 import io.swagger.models.Swagger;
 import io.swagger.models.Tag;
+import io.swagger.models.auth.SecuritySchemeDefinition;
 import io.swagger.models.parameters.BodyParameter;
 import io.swagger.models.parameters.Parameter;
 import io.swagger.models.parameters.PathParameter;
 import io.swagger.models.parameters.QueryParameter;
+import io.swagger.models.properties.ArrayProperty;
 import io.swagger.models.properties.BooleanProperty;
 import io.swagger.models.properties.DoubleProperty;
 import io.swagger.models.properties.IntegerProperty;
@@ -103,9 +107,13 @@ class SwaggerAssembler {
     private ModelRegistry modelRegistry;
     private Tag currentTag;
     private Set<String> excludedPrefixes;
+    private Set<String> includedPrefixes;
     private boolean excludeUtilities;
     private SupportLevel supportLevel = SupportLevel.DEPRECATED;
     private Consumer<Swagger> postprocessor;
+    private Map<String, SecuritySchemeDefinition> securityDefinitions;
+    private List<SecurityRequirement> security;
+    private List<Scheme> schemes = new ArrayList<Scheme>();
 
     private SwaggerAssembler(Service service) {
         this.service = service;
@@ -136,8 +144,31 @@ class SwaggerAssembler {
         return this;
     }
 
+    public SwaggerAssembler setIncludedPrefixes(String... includedPrefixes) {
+        if (includedPrefixes != null) {
+            this.includedPrefixes = new HashSet<>(Arrays.asList(includedPrefixes));
+        }
+
+        return this;
+    }
+
     public SwaggerAssembler setSupportLevel(SupportLevel supportLevel) {
         this.supportLevel = supportLevel;
+        return this;
+    }
+
+    public SwaggerAssembler setSecurityDefinitions(Map<String, SecuritySchemeDefinition> securityDefinitions) {
+        this.securityDefinitions = securityDefinitions;
+        return this;
+    }
+
+    public SwaggerAssembler setSecurity(List<SecurityRequirement> security) {
+        this.security = security;
+        return this;
+    }
+
+    public SwaggerAssembler setSchemes(List<Scheme> schemes) {
+        this.schemes = schemes;
         return this;
     }
 
@@ -168,6 +199,19 @@ class SwaggerAssembler {
                         // skip UI
                         return null;
                     } else {
+                        if (this.includedPrefixes != null) {
+                            boolean included = false;
+                            for (String prefix : this.includedPrefixes) {
+                                if (link.startsWith(prefix)) {
+                                    included = true;
+                                }
+                            }
+
+                            if (!included) {
+                                return null;
+                            }
+                        }
+
                         if (this.excludedPrefixes != null) {
                             for (String prefix : this.excludedPrefixes) {
                                 if (link.startsWith(prefix)) {
@@ -194,7 +238,9 @@ class SwaggerAssembler {
 
         this.swagger.setHost(get.getRequestHeader(Operation.HOST_HEADER));
 
-        this.swagger.setSchemes(new ArrayList<>());
+        this.swagger.setSecurityDefinitions(this.securityDefinitions);
+        this.swagger.setSecurity(this.security);
+        this.swagger.setSchemes(this.schemes);
 
         this.swagger.setInfo(this.info);
         this.swagger.setBasePath(UriUtils.URI_PATH_CHAR);
@@ -573,20 +619,27 @@ class SwaggerAssembler {
                 clazz = Class.forName(type);
             }
 
-            if (clazz == Object.class || clazz == JsonObject.class) {
-                // a generic JSON
-                response.setSchema(new ObjectProperty());
-            } else if (Number.class.isAssignableFrom(clazz)) {
-                response.setSchema(new DoubleProperty());
-            } else if (clazz == Boolean.class) {
-                response.setSchema(new BooleanProperty());
-            } else if (clazz == String.class || clazz == Character.class) {
-                response.setSchema(new StringProperty());
-            } else if (clazz != Void.class) {
-                response.setSchema(refProperty(modelForPodo(clazz)));
-            }
+            setResponseType(response, clazz);
         } catch (ClassNotFoundException ex) {
             Logger.getLogger(SwaggerAssembler.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    private void setResponseType(Response response, Class<?> clazz) {
+
+        if (clazz.isArray()) {
+            response.setSchema(new ArrayProperty(refProperty(modelForPodo(clazz.getComponentType()))));
+        } else if (clazz == Object.class || clazz == JsonObject.class) {
+            // a generic JSON
+            response.setSchema(new ObjectProperty());
+        } else if (Number.class.isAssignableFrom(clazz)) {
+            response.setSchema(new DoubleProperty());
+        } else if (clazz == Boolean.class) {
+            response.setSchema(new BooleanProperty());
+        } else if (clazz == String.class || clazz == Character.class) {
+            response.setSchema(new StringProperty());
+        } else if (clazz != Void.class) {
+            response.setSchema(refProperty(modelForPodo(clazz)));
         }
     }
 
@@ -612,7 +665,7 @@ class SwaggerAssembler {
             return res;
         }
 
-        res.setSchema(refProperty(modelForPodo(type)));
+        setResponseType(res, type);
         return res;
     }
 

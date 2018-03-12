@@ -1,0 +1,499 @@
+<div class="alert alert-danger" *ngIf="errorMessage">
+    <div class="alert-items">
+        <div class="alert-item static">
+            <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="exclamation-circle"></clr-icon>
+            </div>
+            <span class="alert-text">
+                {{errorMessage}}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info" *ngIf="infoMessage">
+    <div class="alert-items">
+        <div class="alert-item static">
+            <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="exclamation-circle"></clr-icon>
+            </div>
+            <span class="alert-text">
+                {{infoMessage}}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <form class="rule-form" (submit)="createRule(newPrefix.value)">
+            <input #newPrefix type="text" name="prefix" placeholder="API Call Prefix" required size=54>
+            <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-lg tooltip-bottom-right">
+                <clr-icon shape="info-circle" size="24"></clr-icon>
+                <span class="tooltip-content">
+                    When an outgoing api call matches this prefix, this rule and shared circuit breaker context will apply
+                </span>
+            </a>
+            <input type="submit" value="New Rule">
+        </form>
+    </div>
+    <div class="col-lg-4">
+        <button class="btn btn-warning-outline" (click)="resetAll = true">Reset All Circuit Breakers</button>
+        <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-lg tooltip-bottom-left">
+            <clr-icon shape="info-circle" size="24"></clr-icon>
+            <span class="tooltip-content">
+                When an API call has failed a number of times the circuit will open and future API outgoing API calls will be bypassed. Use this option to manually reset all circuits to the closed state and re-enable outgoing api calls.
+            </span>
+        </a>
+    </div>
+</div>
+
+<div class="rule-container" *ngFor="let rule of rules">
+    <div class="rule-div row">
+        <div class="col-lg-4 col-md-6 col-sm-6 col-xs-12">
+            <div class="card">
+                <div class="card-block">
+
+                    <a href="{{this.ruleService.baseUrl}}{{rule.documentSelfLink}}">{{rule.documentSelfLink}}</a> [<a href="{{this.ruleService.baseUrl}}{{rule.documentSelfLink}}/stats">stats</a>]
+                </div>
+                <div class="card-block">
+                    <div class="row">
+                        <div class="col-xs-2">Prefix</div>
+                        <div class="col-xs-9">{{rule.prefix}}</div>
+                        <div class="col-xs-1">
+                            <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-right">
+                                <clr-icon shape="info-circle" size="24"></clr-icon>
+                                <span class="tooltip-content">
+                                    When an outgoing api call matches this prefix, this rule and shared circuit breaker context will apply
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-block">
+                    <rule-graph [rule]="rule"></rule-graph>
+                </div>
+                <div class="card-footer">
+                    <div>
+                        <button class="btn btn-outline" (click)="setActive(rule); editPrefix = true">Edit</button>
+                        <button class="btn btn-danger-outline" (click)="activeRule = rule; delete = true">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6 col-sm-6 col-xs-12">
+            <div class="card">
+                <div class="card-header">
+                    Retry
+                </div>
+                <div class="card-block">
+                    <div class="row">
+                        <div class="col-xs-6">Enabled</div>
+                        <div class="col-xs-5">{{rule.retryEnabled}}</div>
+                        <div class="col-xs-1">
+                            <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-left">
+                                <clr-icon shape="info-circle" size="24"></clr-icon>
+                                <span class="tooltip-content">
+                                    Automatically retry of outgoing requests with optional delay and backoff
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-block">
+                    <div class="row">
+                        <div class="col-xs-6">Max Count</div>
+                        <div class="col-xs-5">{{rule.retryMaxCount}}</div>
+                        <div class="col-xs-1">
+                            <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-left">
+                                <clr-icon shape="info-circle" size="24"></clr-icon>
+                                <span class="tooltip-content">
+                                    Maximum number of retries
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-block">
+                    <div class="row">
+                        <div class="col-xs-6">Max Duration</div>
+                        <div class="col-xs-5">{{rule.retryMaxDurationMs}} ms</div>
+                        <div class="col-xs-1">
+                            <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-left">
+                                <clr-icon shape="info-circle" size="24"></clr-icon>
+                                <span class="tooltip-content">
+                                    Maximum amount of time to spend retrying
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-block">
+                    <div class="row">
+                        <div class="col-xs-6">Delay</div>
+                        <div class="col-xs-5">{{rule.retryDelayMs}} ms</div>
+                        <div class="col-xs-1">
+                            <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-left">
+                                <clr-icon shape="info-circle" size="24"></clr-icon>
+                                <span class="tooltip-content">
+                                    Fixed delay between retries, set to 0 to use exponential backoff
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-block">
+                    <div class="row">
+                        <div class="col-xs-6">Backoff</div>
+                        <div class="col-xs-5">{{rule.retryBackoffMs}} ms</div>
+                        <div class="col-xs-1">
+                            <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-left">
+                                <clr-icon shape="info-circle" size="24"></clr-icon>
+                                <span class="tooltip-content">
+                                    Delay that backs off exponentially
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-block">
+                    <div class="row">
+                        <div class="col-xs-6">Backoff Max</div>
+                        <div class="col-xs-5">{{rule.retryBackoffMaxMs}} ms</div>
+                        <div class="col-xs-1">
+                            <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-left">
+                                <clr-icon shape="info-circle" size="24"></clr-icon>
+                                <span class="tooltip-content">
+                                    Maximum amount of exponential delay
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-block">
+                    <div class="row">
+                        <div class="col-xs-6">Jitter</div>
+                        <div class="col-xs-5">{{rule.retryJitterMs}} ms</div>
+                        <div class="col-xs-1">
+                            <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-left">
+                                <clr-icon shape="info-circle" size="24"></clr-icon>
+                                <span class="tooltip-content">
+                                    Random jitter factor to the delay
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div>
+                        <button class="btn btn-outline" (click)="setActive(rule); editRetries = true">Edit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6 col-sm-6 col-xs-12">
+            <div class="card">
+                <div class="card-header">
+                    Circuit Breaker
+                </div>
+                <div class="card-block">
+                    <div class="row">
+                        <div class="col-xs-6">Enabled</div>
+                        <div class="col-xs-5">{{rule.breakerEnabled}}</div>
+                        <div class="col-xs-1">
+                            <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-left">
+                                <clr-icon shape="info-circle" size="24"></clr-icon>
+                                <span class="tooltip-content">
+                                    Circuit breakers are a way of creating systems that fail-fast by temporarily disabling execution as a way of preventing system overload
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-block">
+                    <div class="row">
+                        <div class="col-xs-6">Failure Threshhold</div>
+                        <div class="col-xs-5">{{rule.breakerFailureThreshold}}</div>
+                        <div class="col-xs-1">
+                            <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-left">
+                                <clr-icon shape="info-circle" size="24"></clr-icon>
+                                <span class="tooltip-content">
+                                    Circuit will open when a successive number of executions have failed
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-block">
+                    <div class="row">
+                        <div class="col-xs-6">Success Threshhold</div>
+                        <div class="col-xs-5">{{rule.breakerSuccessThreshold}}</div>
+                        <div class="col-xs-1">
+                            <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-left">
+                                <clr-icon shape="info-circle" size="24"></clr-icon>
+                                <span class="tooltip-content">
+                                    Breaker will close again if a number of trial executions succeed
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-block">
+                    <div class="row">
+                        <div class="col-xs-6">Open Time</div>
+                        <div class="col-xs-5">{{rule.breakerOpenTimeMs}} ms</div>
+                        <div class="col-xs-1">
+                            <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-left">
+                                <clr-icon shape="info-circle" size="24"></clr-icon>
+                                <span class="tooltip-content">
+                                    Amount of time to keep the breaker open
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-block">
+                    <div class="row">
+                        <div class="col-xs-6">Timeout</div>
+                        <div class="col-xs-5">{{rule.breakerTimeoutMs}} ms</div>
+                        <div class="col-xs-1">
+                            <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-left">
+                                <clr-icon shape="info-circle" size="24"></clr-icon>
+                                <span class="tooltip-content">
+                                    Amount of time for a request to be considered a failure
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-outline" (click)="setActive(rule); editBreakers = true">Edit</button>
+                    <button class="btn btn-warning-outline" (click)="setActive(rule); reset = true">Reset</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<clr-modal [(clrModalOpen)]="editPrefix" [clrModalClosable]="false">
+    <h3 class="modal-title">Edit Rule Prefix</h3>
+    <div class="modal-body">
+        <form name="editForm" class="edit-form" (submit)="updateRule(activeRule)">
+            <section class="form-block">
+                <label>{{activeRule.documentSelfLink}}</label>
+                <div class="form-group">
+                    <label for="editPrefix">Prefix
+                        <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-lg tooltip-top-right">
+                            <clr-icon shape="info-circle" size="24"></clr-icon>
+                            <span class="tooltip-content">
+                                When an outgoing api call matches this prefix, this rule and shared circuit breaker context will apply
+                            </span>
+                        </a>
+                    </label>
+                    <input type=text class=form-control id=editPrefix name=editPrefix [(ngModel)]=activeRule.prefix>
+                </div>
+            </section>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="cancelRuleUpdate(); editPrefix = false">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="updateRule(activeRule); editPrefix = false">Ok</button>
+    </div>
+</clr-modal>
+
+
+<clr-modal [(clrModalOpen)]="editRetries" [clrModalClosable]="false">
+    <h3 class="modal-title">Edit Rule Retries</h3>
+    <div class="modal-body">
+        <form name="editForm" class="edit-form" (submit)="updateRule(activeRule)">
+            <section class="form-block">
+                <label>{{activeRule.documentSelfLink}}</label>
+                <div class="form-group">
+                    <label for="editRetryEnabled">Enabled
+                        <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-right">
+                            <clr-icon shape="info-circle" size="24"></clr-icon>
+                            <span class="tooltip-content">
+                                Automatically retry of outgoing requests with optional delay and backoff
+                            </span>
+                        </a>
+                    </label>
+                    <clr-checkbox name=editRetryEnabled [(ngModel)]=activeRule.retryEnabled></clr-checkbox>
+                </div>
+                <div class="form-group">
+                    <label for="editRetryCount">Max Count
+                        <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-right">
+                            <clr-icon shape="info-circle" size="24"></clr-icon>
+                            <span class="tooltip-content">
+                                Maximum number of retries, set to 0 to disable retrying
+                            </span>
+                        </a>
+                    </label>
+                    <input type=text class=form-control id=editRetryCount name=editRetryCount [(ngModel)]=activeRule.retryMaxCount>
+
+                </div>
+                <div class="form-group">
+                    <label for="editRetryDuration">Max Duration Milliseconds
+                        <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-right">
+                            <clr-icon shape="info-circle" size="24"></clr-icon>
+                            <span class="tooltip-content">
+                                Maximum amount of time to spend retrying
+                            </span>
+                        </a>
+                    </label>
+                    <input type=text class=form-control id=editRetryDuration name=editRetryDuration [(ngModel)]=activeRule.retryMaxDurationMs>
+                </div>
+                <div class="form-group">
+                    <label for="editRetryDelay">Delay Milliseconds
+                        <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-right">
+                            <clr-icon shape="info-circle" size="24"></clr-icon>
+                            <span class="tooltip-content">
+                                Fixed delay between retries, set to 0 to use exponential backoff
+                            </span>
+                        </a>
+                    </label>
+                    <input type=text class=form-control id=editRetryDelay name=editRetryDelay [(ngModel)]=activeRule.retryDelayMs>
+                </div>
+                <div class="form-group">
+                    <label for="editRetryBackoff">Backoff Milliseconds
+                        <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-right">
+                            <clr-icon shape="info-circle" size="24"></clr-icon>
+                            <span class="tooltip-content">
+                                Delay that backs off exponentially
+                            </span>
+                        </a>
+                    </label>
+                    <input type=text class=form-control id=editRetryBackoff name=editRetryBackoff [(ngModel)]=activeRule.retryBackoffMs>
+                </div>
+                <div class="form-group">
+                    <label for="editRetryMaxBackoff">Max Backoff Milliseconds
+                        <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-right">
+                            <clr-icon shape="info-circle" size="24"></clr-icon>
+                            <span class="tooltip-content">
+                                Maximum amount of exponential delay
+                            </span>
+                        </a>
+                    </label>
+                    <input type=text class=form-control id=editRetryMaxBackoff name=editRetryMaxBackoff [(ngModel)]=activeRule.retryBackoffMaxMs>
+                </div>
+                <div class="form-group">
+                    <label for="editRetryJitter">Jitter Milliseconds
+                        <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-top-right">
+                            <clr-icon shape="info-circle" size="24"></clr-icon>
+                            <span class="tooltip-content">
+                                Random jitter factor to the delay
+                            </span>
+                        </a>
+                    </label>
+                    <input type=text class=form-control id=editRetryJitter name=editRetryJitter [(ngModel)]=activeRule.retryJitterMs>
+                </div>
+            </section>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="cancelRuleUpdate(); editRetries = false">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="updateRule(activeRule); editRetries = false">Ok</button>
+    </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="editBreakers" [clrModalClosable]="false">
+    <h3 class="modal-title">Edit Rule Circuit Breaker</h3>
+    <div class="modal-body">
+        <form name="editForm" class="edit-form" (submit)="updateRule(activeRule)">
+            <section class="form-block">
+                <label>{{activeRule.documentSelfLink}}</label>
+                <div class="form-group">
+                    <label for="editBreakerEnabled">Enabled
+                        <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-right">
+                            <clr-icon shape="info-circle" size="24"></clr-icon>
+                            <span class="tooltip-content">
+                                Circuit breakers are a way of creating systems that fail-fast by temporarily disabling execution as a way of preventing system overload
+                            </span>
+                        </a>
+                    </label>
+                    <clr-checkbox name=editBreakerEnabled [(ngModel)]=activeRule.breakerEnabled></clr-checkbox>
+                </div>
+                <div class="form-group">
+                    <label for="editBreakerFail">Failure Threshhold
+                        <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-right">
+                            <clr-icon shape="info-circle" size="24"></clr-icon>
+                            <span class="tooltip-content">
+                                Circuit will open when a successive number of executions have failed
+                            </span>
+                        </a>
+                    </label>
+                    <input type=text class=form-control id=editBreakerFail name=editBreakerFail [(ngModel)]=activeRule.breakerFailureThreshold>
+                </div>
+                <div class="form-group">
+                    <label for="editBreakerSuccess">Success Threshhold
+                        <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-right">
+                            <clr-icon shape="info-circle" size="24"></clr-icon>
+                            <span class="tooltip-content">
+                                Circuit will open when a successive number of executions have failed
+                            </span>
+                        </a>
+                    </label>
+                    <input type=text class=form-control id=editBreakerSuccess name=editBreakerSuccess [(ngModel)]=activeRule.breakerSuccessThreshold>
+                </div>
+                <div class="form-group">
+                    <label for="editBreakerOpen">Open Time Milliseconds
+                        <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-right">
+                            <clr-icon shape="info-circle" size="24"></clr-icon>
+                            <span class="tooltip-content">
+                                Amount of time to keep the breaker open
+                            </span>
+                        </a>
+                    </label>
+                    <input type=text class=form-control id=editBreakerOpen name=editBreakerOpen [(ngModel)]=activeRule.breakerOpenTimeMs>
+                </div>
+                <div class="form-group">
+                    <label for="editBreakerTimeout">Timeout Milliseconds
+                        <a href="..." role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-top-right">
+                            <clr-icon shape="info-circle" size="24"></clr-icon>
+                            <span class="tooltip-content">
+                                Amount of time for a request to be considered a failure
+                            </span>
+                        </a>
+                    </label>
+                    <input type=text class=form-control id=editBreakerTimeout name=editBreakerTimeout [(ngModel)]=activeRule.breakerTimeoutMs>
+                </div>
+            </section>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="cancelRuleUpdate(); editBreakers = false">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="updateRule(activeRule); editBreakers = false">Ok</button>
+    </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="reset">
+    <h3 class="modal-title">Reset Circuit?</h3>
+    <div class="modal-body">
+        <p>This will close the circuit breaker and allow outgoing api requests, are you sure?</p>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="reset = false">Cancel</button>
+        <button type="button" class="btn btn-warning-outline" (click)="resetRule(activeRule); reset = false">Ok</button>
+    </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="resetAll">
+    <h3 class="modal-title">Reset all circuits?</h3>
+    <div class="modal-body">
+        <p>This will close all open circuit breakers and allow outgoing api requests to endpoints that have failed recently, are you sure?</p>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="resetAll = false">Cancel</button>
+        <button type="button" class="btn btn-warning" (click)="resetAllRules(); resetAll = false">Ok</button>
+    </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="delete">
+    <h3 class="modal-title">Delete Rule?</h3>
+    <div class="modal-body">
+        <p>This will delete the rule, are you sure?</p>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-primary" (click)="delete = false">Cancel</button>
+        <button type="button" class="btn btn-danger" (click)="deleteRule(activeRule); delete = false">Ok</button>
+    </div>
+</clr-modal>

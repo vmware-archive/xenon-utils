@@ -1,0 +1,17 @@
+[{
+  "prefix": "test",
+  "retryMaxCount": 2,
+  "retryMaxDurationMs": 60000,
+  "retryDelayMs": 250,
+  "retryBackoffMs": 500,
+  "retryJitterMs": 100,
+  "breakerEnabled": false,
+  "breakerFailureThreshold": 2,
+  "breakerOpenTimeMs": 30000,
+  "breakerSuccessThreshold": 5,
+  "breakerTimeout": 30000
+},{
+  "prefix": "default",
+  "breakerEnabled": true,
+  "breakerOpenTimeMs": 60000
+}]

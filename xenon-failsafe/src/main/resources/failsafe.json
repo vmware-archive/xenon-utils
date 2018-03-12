@@ -1,0 +1,17 @@
+[{
+  "prefix": "http://service1",
+  "retryMaxCount": 12,
+  "retryMaxDurationMs": 60000,
+  "retryDelayMs": 250,
+  "retryBackoffMs": 500,
+  "retryJitterMs": 100,
+  "breakerEnabled": true,
+  "breakerFailureThreshold": 5,
+  "breakerOpenTimeMs": 30000,
+  "breakerSuccessThreshold": 5,
+  "breakerTimeout": 30000
+},{
+  "prefix": "http://service2",
+  "breakerEnabled": true,
+  "breakerOpenTimeMs": 60000
+}]

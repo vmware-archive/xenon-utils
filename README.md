@@ -6,6 +6,7 @@ This repo holds libraries/utilities which will make it easy for users to solve v
 * [Logging](logging/README.md) Integrate Java logging frameworks with Xenon
 * [xenonc](xenonc/README.md) A CLI for Xenon written in Go
 * [Swagger](swagger-adapter/README.md) Automatically generate Swagger description of your services
+* [Failsafe](xenon-failsafe/README.md) Retry and circuit breaking for xenon operations
 
 ## Releases and Major Branches
 Every project follows different release cycle. Consult every project's README file for details.

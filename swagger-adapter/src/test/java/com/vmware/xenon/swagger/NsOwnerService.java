@@ -18,6 +18,7 @@ import com.vmware.xenon.common.RequestRouter.Route.RouteDocumentation;
 import com.vmware.xenon.common.RequestRouter.Route.RouteDocumentation.ApiResponse;
 import com.vmware.xenon.common.RequestRouter.Route.RouteDocumentation.PathParam;
 import com.vmware.xenon.common.RequestRouter.Route.RouteDocumentation.QueryParam;
+import com.vmware.xenon.common.RequestRouter.Route.SupportLevel;
 import com.vmware.xenon.common.StatelessService;
 
 public class NsOwnerService extends StatelessService {
@@ -85,6 +86,19 @@ public class NsOwnerService extends StatelessService {
 
         get.setBody(res);
         get.complete();
+    }
+
+    @RouteDocumentation(
+            description = "Only allow internal system calls to delete service (i.e: during shutdown)",
+            supportLevel = SupportLevel.INTERNAL
+    )
+    @Override
+    public void handleDelete(Operation inboundOp) {
+        if (inboundOp.isRemote()) {
+            inboundOp.fail(Operation.STATUS_CODE_BAD_METHOD);
+            return;
+        }
+        inboundOp.complete();
     }
 }
 

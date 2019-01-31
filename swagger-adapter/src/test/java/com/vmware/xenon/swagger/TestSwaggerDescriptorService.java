@@ -23,6 +23,8 @@ import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -40,11 +42,14 @@ import io.swagger.models.properties.RefProperty;
 import io.swagger.util.Json;
 import io.swagger.util.Yaml;
 import org.hamcrest.CoreMatchers;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.RequestRouter.Route.SupportLevel;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.common.test.TestRequestSender;
@@ -56,14 +61,30 @@ import com.vmware.xenon.ui.UiService;
 
 /**
  */
+@RunWith(Parameterized.class)
 public class TestSwaggerDescriptorService {
 
     public static final String INFO_DESCRIPTION = "description";
     public static final String INFO_TERMS_OF_SERVICE = "terms of service";
     public static VerificationHost host;
 
-    @BeforeClass
-    public static void setup() throws Throwable {
+    /** The support level to use for the test execution. */
+    private SupportLevel supportLevel;
+
+    public TestSwaggerDescriptorService(SupportLevel supportLevel) {
+        this.supportLevel = supportLevel;
+    }
+
+    @Parameterized.Parameters
+    public static Collection<Object[]> testParameters() {
+        return Arrays.asList(
+                new Object[] {SupportLevel.PUBLIC},
+                new Object[] {SupportLevel.INTERNAL}
+        );
+    }
+
+    @Before
+    public void setup() throws Throwable {
         host = VerificationHost.create(0);
         System.out.println("Host details: " + host);
 
@@ -77,6 +98,7 @@ public class TestSwaggerDescriptorService {
         swagger.setSwaggerPostprocessor( s -> s.getInfo().setVersion("postprocessed"));
 
         swagger.setInfo(info);
+        swagger.setSupportLevel(this.supportLevel);
         swagger.setExcludedPrefixes("/core/authz/");
 
         swagger.setStripPackagePrefixes("com:vmware:xenon:common:");
@@ -108,8 +130,8 @@ public class TestSwaggerDescriptorService {
         host.waitForServiceAvailable(SwaggerDescriptorService.SELF_LINK);
     }
 
-    @AfterClass
-    public static void destroy() {
+    @After
+    public void destroy() {
         host.stop();
     }
 
@@ -377,5 +399,14 @@ public class TestSwaggerDescriptorService {
         assertEquals(2, mult.getGet().getParameters().size());
         assertNotNull(
                 mult.getGet().getParameters().stream().filter(param -> param.getName().equals("a")).findFirst().get());
+
+        Path calculate = swagger.getPath("/calculate");
+        if (calculate != null && this.supportLevel == SupportLevel.PUBLIC) {
+            assertNull("DELETE on /calculate is INTERNAL. It shouldn't be returned since supportLevel=PUBLIC", calculate.getDelete());
+        } else if (this.supportLevel == SupportLevel.INTERNAL) {
+            String msg = "DELETE on /calculate is INTERNAL. It should be be returned.";
+            assertNotNull(msg, calculate);
+            assertNotNull(msg, calculate.getDelete());
+        }
     }
 }

@@ -1,3 +1,5 @@
+# VMware has ended active development of this project, this repository will no longer be updated.
+
 # xenon-utils
 This repo holds libraries/utilities which will make it easy for users to solve very specific problems and complement Xenon's capabilities. It is being developed as a Xenon Peer Project and will be primarily used to provide inter-operabilities with various non-xenon solutions/frameworks. At the start the project would include libraries like slf4j, distributed-tracing, etc, which helps interact with other frameworks.
 

@@ -1,0 +1,15 @@
+ui/coverage/
+ui/dist/
+ui/html-report/
+ui/node_modules/
+ui/typings/
+**/*npm-debug.log.*
+**/*yarn-error.log.*
+**/.idea/
+**/target
+.idea/
+.DS_Store
+ui/package-lock.json
+ui/.npmrc
+**/*.iml
+src/main/resources/ui/com/vmware/**
